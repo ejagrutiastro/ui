@@ -4,11 +4,86 @@
   const ICONS = {
     delete: "./src/images/icon-delete.svg",
     edit: "./src/images/icon-pencil.svg",
+    first: "./src/images/icon-chevrons-left.svg",
     kundali: "./src/images/kundali1.jpg",
+    last: "./src/images/icon-chevrons-right.svg",
     next: "./src/images/icon-chevron-right.svg",
     new: "./src/images/icon-plus.svg",
     previous: "./src/images/icon-chevron-left.svg",
     view: "./src/images/icon-eye.svg",
+  };
+  const ASTRO_NOTE_CATEGORIES = [
+    { key: "planet", labelEn: "planet", labelMr: "????", glyph: "P", image: "./src/images/planets.jpg" },
+    { key: "house", labelEn: "house", labelMr: "??", glyph: "H" },
+    { key: "sign", labelEn: "sign", labelMr: "????", glyph: "S", image: "./src/images/zodiac.jpg" },
+    { key: "nakshatra", labelEn: "nakshatra", labelMr: "???????", glyph: "N", image: "./src/images/nakshatra.jpg" },
+    { key: "jaimini", labelEn: "Jaimini", labelMr: "??????", glyph: "J" },
+    { key: "kp", labelEn: "KP", labelMr: "????", glyph: "KP" },
+  ];
+  const ASTRO_NOTE_ICON_MAP = {
+    planet: [
+      { key: "sun", labelEn: "Sun", labelMr: "?????", glyph: "Su", image: "./src/images/sun.jpg" },
+      { key: "moon", labelEn: "Moon", labelMr: "?????", glyph: "Mo", image: "./src/images/moon.jpg" },
+      { key: "mars", labelEn: "Mars", labelMr: "????", glyph: "Ma", image: "./src/images/mars.jpg" },
+      { key: "mercury", labelEn: "Mercury", labelMr: "???", glyph: "Me", image: "./src/images/mercury.jpg" },
+      { key: "jupiter", labelEn: "Jupiter", labelMr: "????", glyph: "Ju", image: "./src/images/jupiter.jpg" },
+      { key: "venus", labelEn: "Venus", labelMr: "?????", glyph: "Ve", image: "./src/images/venus.jpg" },
+      { key: "saturn", labelEn: "Saturn", labelMr: "???", glyph: "Sa", image: "./src/images/saturn.jpg" },
+      { key: "rahu", labelEn: "Rahu", labelMr: "????", glyph: "Ra", image: "./src/images/rahu.jpg" },
+      { key: "ketu", labelEn: "Ketu", labelMr: "????", glyph: "Ke", image: "./src/images/ketu.jpg" },
+    ],
+    house: Array.from({ length: 12 }, (_, index) => {
+      const n = index + 1;
+      return { key: `house-${n}`, labelEn: `${n}H`, labelMr: `${n} ??`, glyph: `${n}`, image: `./src/images/house-${n}.jpg` };
+    }),
+    sign: [
+      { key: "aries", labelEn: "Aries", labelMr: "???", glyph: "Ar", image: "./src/images/Aries.jpg" },
+      { key: "taurus", labelEn: "Taurus", labelMr: "????", glyph: "Ta", image: "./src/images/taurus.jpg" },
+      { key: "gemini", labelEn: "Gemini", labelMr: "?????", glyph: "Ge", image: "./src/images/gemini.jpg" },
+      { key: "cancer", labelEn: "Cancer", labelMr: "????", glyph: "Ca", image: "./src/images/Cancer.jpg" },
+      { key: "leo", labelEn: "Leo", labelMr: "????", glyph: "Le", image: "./src/images/Leo.jpg" },
+      { key: "virgo", labelEn: "Virgo", labelMr: "?????", glyph: "Vi", image: "./src/images/Virgo.jpg" },
+      { key: "libra", labelEn: "Libra", labelMr: "???", glyph: "Li", image: "./src/images/Libra.jpg" },
+      { key: "scorpio", labelEn: "Scorpio", labelMr: "???????", glyph: "Sc", image: "./src/images/Scorpio.jpg" },
+      { key: "sagittarius", labelEn: "Sagittarius", labelMr: "???", glyph: "Sg", image: "./src/images/Sagittarius.jpg" },
+      { key: "capricorn", labelEn: "Capricorn", labelMr: "???", glyph: "Cp", image: "./src/images/Capricon.jpg" },
+      { key: "aquarius", labelEn: "Aquarius", labelMr: "????", glyph: "Aq", image: "./src/images/Aquarius.jpg" },
+      { key: "pisces", labelEn: "Pisces", labelMr: "???", glyph: "Pi", image: "./src/images/Pisces.jpg" },
+    ],
+    nakshatra: [
+      { key: "ashwini", labelEn: "Ashwini", labelMr: "???????", glyph: "1", image: "./src/images/nakshatra-ashwini.jpg" },
+      { key: "bharani", labelEn: "Bharani", labelMr: "????", glyph: "2", image: "./src/images/nakshatra-bharani.jpg" },
+      { key: "krittika", labelEn: "Krittika", labelMr: "????????", glyph: "3", image: "./src/images/nakshatra-krittika.jpg" },
+      { key: "rohini", labelEn: "Rohini", labelMr: "??????", glyph: "4", image: "./src/images/nakshatra-rohini.jpg" },
+      { key: "mrigashira", labelEn: "Mrigashira", labelMr: "????????", glyph: "5", image: "./src/images/nakshatra-mrigashira.jpg" },
+      { key: "ardra", labelEn: "Ardra", labelMr: "???????", glyph: "6", image: "./src/images/nakshatra-ardra.jpg" },
+      { key: "punarvasu", labelEn: "Punarvasu", labelMr: "????????", glyph: "7", image: "./src/images/nakshatra-punarvasu.jpg" },
+      { key: "pushya", labelEn: "Pushya", labelMr: "?????", glyph: "8", image: "./src/images/nakshatra-pushya.jpg" },
+      { key: "ashlesha", labelEn: "Ashlesha", labelMr: "???????", glyph: "9", image: "./src/images/nakshatra-ashlesha.jpg" },
+      { key: "magha", labelEn: "Magha", labelMr: "???", glyph: "10", image: "./src/images/nakshatra-magha.jpg" },
+      { key: "purva-phalguni", labelEn: "Purva Phalguni", labelMr: "????? ????????", glyph: "11", image: "./src/images/nakshatra-purva-phalguni.jpg" },
+      { key: "uttara-phalguni", labelEn: "Uttara Phalguni", labelMr: "????? ????????", glyph: "12", image: "./src/images/nakshatra-uttara-phalguni.jpg" },
+      { key: "hasta", labelEn: "Hasta", labelMr: "????", glyph: "13", image: "./src/images/nakshatra-hasta.jpg" },
+      { key: "chitra", labelEn: "Chitra", labelMr: "??????", glyph: "14", image: "./src/images/nakshatra-chitra.jpg" },
+      { key: "swati", labelEn: "Swati", labelMr: "??????", glyph: "15", image: "./src/images/nakshatra-swati.jpg" },
+      { key: "vishakha", labelEn: "Vishakha", labelMr: "??????", glyph: "16", image: "./src/images/nakshatra-vishakha.jpg" },
+      { key: "anuradha", labelEn: "Anuradha", labelMr: "???????", glyph: "17", image: "./src/images/nakshatra-anuradha.jpg" },
+      { key: "jyeshtha", labelEn: "Jyeshtha", labelMr: "????????", glyph: "18", image: "./src/images/nakshatra-jyeshtha.jpg" },
+      { key: "mula", labelEn: "Mula", labelMr: "???", glyph: "19", image: "./src/images/nakshatra-mula.jpg" },
+      { key: "purva-ashadha", labelEn: "Purva Ashadha", labelMr: "??????????", glyph: "20", image: "./src/images/nakshatra-purva-ashadha.jpg" },
+      { key: "uttara-ashadha", labelEn: "Uttara Ashadha", labelMr: "??????????", glyph: "21", image: "./src/images/nakshatra-uttara-ashadha.jpg" },
+      { key: "shravan", labelEn: "Shravan", labelMr: "?????", glyph: "22", image: "./src/images/nakshatra-shravan.jpg" },
+      { key: "dhanishta", labelEn: "Dhanishta", labelMr: "???????", glyph: "23", image: "./src/images/nakshatra-dhanishta.jpg" },
+      { key: "shatabhisha", labelEn: "Shatabhisha", labelMr: "??????", glyph: "24", image: "./src/images/nakshatra-shatabhisha.jpg" },
+      { key: "purva-bhadrapada", labelEn: "Purva Bhadrapada", labelMr: "?????????????", glyph: "25", image: "./src/images/nakshatra-purva-bhadrapada.jpg" },
+      { key: "uttara-bhadrapada", labelEn: "Uttara Bhadrapada", labelMr: "?????????????", glyph: "26", image: "./src/images/nakshatra-uttara-bhadrapada.jpg" },
+      { key: "revati", labelEn: "Revati", labelMr: "?????", glyph: "27", image: "./src/images/nakshatra-revati.jpg" },
+    ],
+    jaimini: [
+      { key: "gulika", labelEn: "Gulika", labelMr: "??????", glyph: "Gu" },
+      { key: "mandi", labelEn: "Mandi", labelMr: "????", glyph: "Ma" },
+    ],
+    kp: [],
   };
   const STORAGE_KEYS = {
     client: "ej_astrology_client",
@@ -83,14 +158,23 @@
     astroNotes: {
       records: [],
       page: 1,
-      pageSize: 10,
-      total: 0,
+      pageSize: 5,
+      total: null,
+      searchResults: [],
+      searchPage: 1,
+      searchPageSize: 1,
+      searchTotal: null,
+      searchLoading: false,
+      searchError: "",
       isLoading: false,
       isSaving: false,
       error: "",
       message: "",
       mode: "list",
+      dialogMode: "add",
       editingId: null,
+      activeCategory: "planet",
+      selections: [],
       form: {
         summary: "",
         notes: "",
@@ -125,8 +209,6 @@
   async function init() {
     state.messages.en = await loadIni("./src/locales/en.ini");
     state.messages.mr = await loadIni("./src/locales/mr.ini");
-    state.planetPages.en.sun1h = await loadText("./src/planets/sun1h.txt");
-    state.planetPages.mr.sun1h = await loadText("./src/planets/sun1h.mr.txt").catch(() => state.planetPages.en.sun1h);
     document.documentElement.lang = state.language === "mr" ? "mr" : "en";
     document.addEventListener("click", () => closeChartPickers());
     render();
@@ -287,6 +369,9 @@
           loadNakshatras();
         }
         if (state.route === "planets" && state.astroNotes.records.length === 0) {
+          if (!Number.isFinite(state.astroNotes.pageSize) || state.astroNotes.pageSize <= 0) {
+            state.astroNotes.pageSize = 5;
+          }
           loadAstroNotesPage();
         }
       });
@@ -391,7 +476,11 @@
         <section class="feature-panel ${state.route === "planets" ? "planet-page-hero" : ""}">
           <p class="eyebrow">${t("app.shortName")}</p>
           <h1>${state.route === "planets" ? t("feature.astroNotes") : t(routeMap[state.route] || "dashboard.title")}</h1>
+        <div class="planet-hero-row">
           <p>${state.route === "planets" ? t("feature.astroNotesSoon") : t("page.placeholder")}</p>
+          ${state.route === "planets" ? `<button class="primary-button compact-action astro-notes-hero-button" id="searchAstroNoteButton" type="button">Search Notes</button>` : ""}
+          ${state.route === "planets" ? `<button class="primary-button compact-action astro-notes-hero-button" id="addAstroNoteButton" type="button">${t("astroNotes.add")}</button>` : ""}
+        </div>
         </section>
         ${state.route === "planets" ? planetsPageHtml() : ""}
       </main>
@@ -402,39 +491,31 @@
     return `
       <section class="panel planet-browser-panel">
         ${astroNotesHtml()}
-        <div class="planet-article-card">
-          <div class="planet-placeholder-copy">
-            <p>${escapeHtml(t("feature.astroNotesSoon"))}</p>
-          </div>
-        </div>
       </section>
     `;
   }
 
   function astroNotesHtml() {
     const notes = state.astroNotes;
+    const pageSize = Number(notes.pageSize) > 0 ? Number(notes.pageSize) : 5;
     const canGoPrev = notes.page > 1;
-    const canGoNext = notes.page * notes.pageSize < notes.total;
+    const totalPages = astroNotesTotalPages();
+    const canGoNext = notes.page < totalPages;
     return `
       <section class="panel astro-notes-panel">
-        <div class="panel-header astro-notes-header">
-          <div>
-            <h2>${t("astroNotes.title")}</h2>
-            <p class="astro-notes-subtitle">${t("astroNotes.subtitle")}</p>
-          </div>
-          <button class="primary-button compact-action" id="addAstroNoteButton" type="button">${t("astroNotes.add")}</button>
-        </div>
         <div class="astro-notes-toolbar">
           <div class="astro-notes-controls">
             <label class="astro-notes-page-size">
               <span>${t("horoscope.rowsPerPage")}</span>
               <select id="astroNotesPageSize">
-                ${[5, 10, 25, 50].map((size) => `<option value="${size}" ${notes.pageSize === size ? "selected" : ""}>${size}</option>`).join("")}
+                ${[5, 10, 25, 50].map((size) => `<option value="${size}" ${pageSize === size ? "selected" : ""}>${size}</option>`).join("")}
               </select>
             </label>
             <div class="astro-notes-pagination">
-              <button class="icon-button astro-page-button" id="prevAstroNotesPage" type="button" ${!canGoPrev || notes.isLoading ? "disabled" : ""}>${t("horoscope.previous")}</button>
-              <button class="icon-button astro-page-button" id="nextAstroNotesPage" type="button" ${!canGoNext || notes.isLoading ? "disabled" : ""}>${t("horoscope.next")}</button>
+              <button class="icon-button astro-page-button" id="firstAstroNotesPage" type="button" ${!canGoPrev || notes.isLoading ? "disabled" : ""} title="First page" aria-label="First page">${ICONS.first ? `<img src="${ICONS.first}" alt="" />` : "<<"}</button>
+              <button class="icon-button astro-page-button" id="prevAstroNotesPage" type="button" ${!canGoPrev || notes.isLoading ? "disabled" : ""} title="${t("horoscope.previous")}" aria-label="${t("horoscope.previous")}">${ICONS.previous ? `<img src="${ICONS.previous}" alt="" />` : "<"}</button>
+              <button class="icon-button astro-page-button" id="nextAstroNotesPage" type="button" ${!canGoNext || notes.isLoading ? "disabled" : ""} title="${t("horoscope.next")}" aria-label="${t("horoscope.next")}">${ICONS.next ? `<img src="${ICONS.next}" alt="" />` : ">"}</button>
+              <button class="icon-button astro-page-button" id="lastAstroNotesPage" type="button" ${!canGoNext || notes.isLoading ? "disabled" : ""} title="Last page" aria-label="Last page">${ICONS.last ? `<img src="${ICONS.last}" alt="" />` : ">>"}</button>
             </div>
           </div>
         </div>
@@ -444,6 +525,7 @@
           <table class="data-table">
             <thead>
               <tr>
+                <th>#</th>
                 <th>${t("astroNotes.summary")}</th>
                 <th>${t("astroNotes.notes")}</th>
                 <th>${t("horoscope.actions")}</th>
@@ -452,25 +534,33 @@
             <tbody>
               ${
                 notes.isLoading
-                  ? `<tr><td colspan="3">${t("common.loading")}</td></tr>`
+                  ? `<tr><td colspan="4">${t("common.loading")}</td></tr>`
                   : notes.records.length
-                    ? notes.records.map(astroNoteRowHtml).join("")
-                    : `<tr><td colspan="3">${t("horoscope.noRecords")}</td></tr>`
+                    ? notes.records.map((record, index) => astroNoteRowHtml(record, index, notes)).join("")
+                    : `<tr><td colspan="4">${t("horoscope.noRecords")}</td></tr>`
               }
             </tbody>
           </table>
+        </div>
+        <div class="astro-notes-table-footer">
+          <span class="astro-notes-page-indicator">Page ${notes.page} / ${totalPages}</span>
+          <span class="astro-notes-page-indicator">Total Records: ${notes.total ?? 0}</span>
         </div>
         ${notes.mode === "form" ? astroNoteModalHtml() : ""}
       </section>
     `;
   }
 
-  function astroNoteRowHtml(record) {
+  function astroNoteRowHtml(record, index, notesState = state.astroNotes) {
     const noteId = astroNoteId(record);
+    const summary = truncateCellText(record.summary || record.title || "-");
+    const noteText = truncateCellText(record.notes || "-");
+    const rowNumber = (notesState.page - 1) * notesState.pageSize + index + 1;
     return `
       <tr>
-        <td>${escapeHtml(record.summary || record.title || "-")}</td>
-        <td>${escapeHtml(record.notes || "-")}</td>
+        <td>${rowNumber}</td>
+        <td title="${escapeHtml(summary.full)}">${escapeHtml(summary.display)}</td>
+        <td title="${escapeHtml(noteText.full)}">${escapeHtml(noteText.display)}</td>
         <td>
           <div class="row-actions">
             <button class="icon-button" data-edit-astro-note="${escapeHtml(noteId)}" type="button" title="${t("horoscope.updateAction")}" aria-label="${t("horoscope.updateAction")}">${ICONS.edit ? `<img src="${ICONS.edit}" alt="" />` : "Edit"}</button>
@@ -483,33 +573,158 @@
 
   function astroNoteModalHtml() {
     const form = state.astroNotes.form;
+    const activeCategory = state.astroNotes.activeCategory || "planet";
+    const selectedItems = state.astroNotes.selections || [];
+    const isSearchMode = state.astroNotes.dialogMode === "search";
+    const searchRecord = state.astroNotes.searchResults?.[0] || null;
+    const searchCanGoPrev = state.astroNotes.searchPage > 1;
+    const searchCanGoNext = state.astroNotes.searchTotal != null ? state.astroNotes.searchPage < state.astroNotes.searchTotal : !state.astroNotes.searchError;
+    const searchTotalPages = state.astroNotes.searchTotal != null ? Math.max(1, Math.ceil(state.astroNotes.searchTotal / state.astroNotes.searchPageSize)) : Math.max(1, state.astroNotes.searchPage);
+    const searchTextareaValue = state.astroNotes.searchError
+      ? state.astroNotes.searchError
+      : searchRecord?.notes
+        ? searchRecord.notes
+        : "No notes found for the selected context.";
     return `
-      <div class="kundali-modal-backdrop" data-close-astro-note-modal="true">
+      <div class="kundali-modal-backdrop" id="astroNoteModalBackdrop">
         <section class="kundali-tool-modal astro-note-modal" role="dialog" aria-modal="true" aria-label="${t("astroNotes.title")}">
-          <div class="kundali-slider-header">
+          <div class="kundali-slider-header astro-note-modal-header">
             <div>
               <strong>${state.astroNotes.editingId ? t("astroNotes.edit") : t("astroNotes.add")}</strong>
               <span>${t("astroNotes.subtitle")}</span>
             </div>
-            <button class="icon-button" data-close-astro-note-modal="true" type="button" aria-label="Close">X</button>
+            <button class="icon-button" id="closeAstroNoteModalButton" type="button" aria-label="Close">X</button>
           </div>
-          <div class="astro-note-form">
-            <label>
-              <span>${t("astroNotes.summary")}</span>
-              <input id="astroNoteSummary" value="${escapeHtml(form.summary)}" />
-            </label>
-            <label>
-              <span>${t("astroNotes.notes")}</span>
-              <textarea id="astroNoteNotes" rows="8">${escapeHtml(form.notes)}</textarea>
-            </label>
-            <div class="form-actions">
-              <button class="ghost-button" data-close-astro-note-modal="true" type="button">${t("location.back")}</button>
-              <button class="primary-button" id="saveAstroNoteButton" type="button" ${state.astroNotes.isSaving ? "disabled" : ""}>${state.astroNotes.isSaving ? t("location.saving") : t("common.submit")}</button>
-            </div>
+          <div class="astro-note-modal-split">
+            <aside class="astro-note-picker">
+              <div class="astro-note-category-list" role="tablist" aria-label="Astro note categories">
+                ${ASTRO_NOTE_CATEGORIES.map(
+                  (category) => `
+                    <button class="astro-note-category ${activeCategory === category.key ? "active" : ""}" data-astro-note-category="${category.key}" type="button">
+                      ${astroNoteCategoryVisualHtml(category)}
+                      <span>${escapeHtml(astroNoteDisplayLabel(category))}</span>
+                    </button>
+                  `,
+                ).join("")}
+              </div>
+              <div class="astro-note-icon-grid" aria-label="Astro note icons">
+                ${astroNoteIconGridHtml(activeCategory)}
+              </div>
+            </aside>
+            <section class="astro-note-editor">
+              ${
+                isSearchMode
+                  ? `
+                    <div class="astro-note-selection-panel">
+                      <span class="astro-note-selection-label">Selected context</span>
+                      <div class="astro-note-selection-list">
+                        ${
+                          selectedItems.length
+                            ? selectedItems.map((item) => astroNoteSelectionChipHtml(item)).join("")
+                            : `<span class="astro-note-selection-empty">Select one or more icons from the left</span>`
+                        }
+                      </div>
+                    </div>
+                    <div class="astro-note-form astro-note-search-form">
+                      <div class="astro-note-search-box">
+                        <div class="astro-note-search-header-row">
+                          <span>${t("astroNotes.notes")}</span>
+                          <div class="astro-note-search-nav astro-note-search-nav-top">
+                            <button class="icon-button astro-page-button" id="searchAstroNotesPrev" type="button" ${!searchCanGoPrev || state.astroNotes.searchLoading ? "disabled" : ""} title="${t("horoscope.previous")}" aria-label="${t("horoscope.previous")}">${ICONS.previous ? `<img src="${ICONS.previous}" alt="" />` : "<"}</button>
+                            <button class="icon-button astro-page-button" id="searchAstroNotesNext" type="button" ${!searchCanGoNext || state.astroNotes.searchLoading ? "disabled" : ""} title="${t("horoscope.next")}" aria-label="${t("horoscope.next")}">${ICONS.next ? `<img src="${ICONS.next}" alt="" />` : ">"}</button>
+                          </div>
+                        </div>
+                        <textarea id="astroNoteSearchNotes" rows="12" readonly>${escapeHtml(searchTextareaValue)}</textarea>
+                      </div>
+                    </div>
+                    <div class="astro-notes-table-footer astro-note-search-footer">
+                      <span class="astro-notes-page-indicator">Page ${state.astroNotes.searchPage} / ${searchTotalPages}</span>
+                      <span class="astro-notes-page-indicator">Total Records: ${state.astroNotes.searchTotal ?? state.astroNotes.searchResults.length ?? 0}</span>
+                    </div>
+                  `
+                  : `
+                    <div class="astro-note-selection-panel">
+                      <span class="astro-note-selection-label">Selected context</span>
+                      <div class="astro-note-selection-list">
+                        ${
+                          selectedItems.length
+                            ? selectedItems.map((item) => astroNoteSelectionChipHtml(item)).join("")
+                            : `<span class="astro-note-selection-empty">Select one or more icons from the left</span>`
+                        }
+                      </div>
+                    </div>
+                    <div class="astro-note-form">
+                      <label>
+                        <span>${t("astroNotes.notes")}</span>
+                        <textarea id="astroNoteNotes" rows="8">${escapeHtml(form.notes)}</textarea>
+                      </label>
+                      <div class="form-actions">
+                        <button class="primary-button" id="saveAstroNoteButton" type="button" ${state.astroNotes.isSaving ? "disabled" : ""}>${state.astroNotes.isSaving ? t("location.saving") : t("common.submit")}</button>
+                      </div>
+                    </div>
+                  `
+              }
+            </section>
           </div>
         </section>
       </div>
     `;
+  }
+
+  function astroNoteIconGridHtml(categoryKey) {
+    const items = ASTRO_NOTE_ICON_MAP[categoryKey] || [];
+    if (!items.length) {
+      return `<div class="astro-note-empty-state">${escapeHtml(astroNoteDisplayLabel(ASTRO_NOTE_CATEGORIES.find((category) => category.key === categoryKey)) || "No items")}</div>`;
+    }
+    return items
+      .map((item) => {
+        const selected = isAstroNoteSelectionSelected(categoryKey, item.key);
+        return `
+          <button class="astro-note-icon-tile ${selected ? "selected" : ""}" data-astro-note-item="${categoryKey}:${item.key}" type="button">
+            ${astroNoteIconVisualHtml(item, categoryKey)}
+            <strong>${escapeHtml(astroNoteDisplayLabel(item))}</strong>
+          </button>
+        `;
+      })
+      .join("");
+  }
+
+  function astroNoteSelectionChipHtml(item) {
+    return `
+      <button class="astro-note-selection-chip" data-remove-astro-note-item="${escapeHtml(item.categoryKey)}:${escapeHtml(item.key)}" type="button">
+        ${astroNoteIconVisualHtml(item, item.categoryKey)}
+        <strong>${escapeHtml(astroNoteDisplayLabel(item))}</strong>
+        <span class="astro-note-selection-remove">x</span>
+      </button>
+    `;
+  }
+
+  function astroNoteIconVisualHtml(item, categoryKey) {
+    if (item.image) {
+      return `<span class="astro-note-icon-badge image-badge"><img src="${escapeHtml(item.image)}" alt="" /></span>`;
+    }
+    return `<span class="astro-note-icon-badge">${escapeHtml(item.glyph || iconBadgeText(categoryKey, item.label))}</span>`;
+  }
+
+  function astroNoteCategoryVisualHtml(category) {
+    if (category.image) {
+      return `<span class="astro-note-category-icon image-badge"><img src="${escapeHtml(category.image)}" alt="" /></span>`;
+    }
+    return `<span class="astro-note-category-icon">${escapeHtml(category.glyph || category.label.slice(0, 1).toUpperCase())}</span>`;
+  }
+
+  function iconBadgeText(categoryKey, label) {
+    if (categoryKey === "house") return label.replace("H", "");
+    return label.slice(0, 2).toUpperCase();
+  }
+
+  function astroNoteDisplayLabel(item) {
+    if (!item) return "";
+    return state.language === "mr" ? item.labelMr || item.labelEn || "" : item.labelEn || item.labelMr || "";
+  }
+
+  function isAstroNoteSelectionSelected(categoryKey, key) {
+    return (state.astroNotes.selections || []).some((item) => item.categoryKey === categoryKey && item.key === key);
   }
 
   function attachPlanetHandlers() {
@@ -525,22 +740,57 @@
 
     const addButton = app.querySelector("#addAstroNoteButton");
     const pageSizeSelect = app.querySelector("#astroNotesPageSize");
+    const firstButton = app.querySelector("#firstAstroNotesPage");
     const prevButton = app.querySelector("#prevAstroNotesPage");
     const nextButton = app.querySelector("#nextAstroNotesPage");
-    const closeButtons = app.querySelectorAll("[data-close-astro-note-modal]");
+    const lastButton = app.querySelector("#lastAstroNotesPage");
+    const closeButton = app.querySelector("#closeAstroNoteModalButton");
+    const backButton = app.querySelector(".astro-note-form .ghost-button");
     const saveButton = app.querySelector("#saveAstroNoteButton");
-    const summaryInput = app.querySelector("#astroNoteSummary");
     const notesInput = app.querySelector("#astroNoteNotes");
+    const searchPrevButton = app.querySelector("#searchAstroNotesPrev");
+    const searchNextButton = app.querySelector("#searchAstroNotesNext");
     const modal = app.querySelector(".astro-note-modal");
+    const modalBackdrop = app.querySelector("#astroNoteModalBackdrop");
 
     if (addButton) {
       addButton.addEventListener("click", openAstroNoteCreate);
     }
+    const searchButton = app.querySelector("#searchAstroNoteButton");
+    if (searchButton) {
+      searchButton.addEventListener("click", openAstroNoteSearch);
+    }
+    app.querySelectorAll("[data-astro-note-category]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.astroNotes.activeCategory = button.dataset.astroNoteCategory || "planet";
+        render();
+      });
+    });
+    app.querySelectorAll("[data-astro-note-item]").forEach((button) => {
+      button.addEventListener("click", () => toggleAstroNoteSelection(button.dataset.astroNoteItem));
+    });
+    app.querySelectorAll("[data-remove-astro-note-item]").forEach((button) => {
+      button.addEventListener("click", () => toggleAstroNoteSelection(button.dataset.removeAstroNoteItem));
+    });
+    if (searchPrevButton) {
+      searchPrevButton.addEventListener("click", () => changeAstroNoteSearchPage(-1));
+    }
+    if (searchNextButton) {
+      searchNextButton.addEventListener("click", () => changeAstroNoteSearchPage(1));
+    }
     if (pageSizeSelect) {
       pageSizeSelect.addEventListener("change", () => {
-        state.astroNotes.pageSize = Number(pageSizeSelect.value) || 10;
+        state.astroNotes.pageSize = Number(pageSizeSelect.value) || 5;
         state.astroNotes.page = 1;
         loadAstroNotesPage();
+      });
+    }
+    if (firstButton) {
+      firstButton.addEventListener("click", () => {
+        if (state.astroNotes.page > 1) {
+          state.astroNotes.page = 1;
+          loadAstroNotesPage();
+        }
       });
     }
     if (prevButton) {
@@ -553,23 +803,44 @@
     }
     if (nextButton) {
       nextButton.addEventListener("click", () => {
-        state.astroNotes.page += 1;
-        loadAstroNotesPage();
+        const lastPage = astroNotesTotalPages();
+        if (state.astroNotes.page < lastPage) {
+          state.astroNotes.page += 1;
+          loadAstroNotesPage();
+        }
       });
     }
-    closeButtons.forEach((button) => {
-      button.addEventListener("click", closeAstroNoteModal);
-    });
+    if (lastButton) {
+      lastButton.addEventListener("click", () => {
+        const lastPage = astroNotesTotalPages();
+        if (state.astroNotes.page !== lastPage) {
+          state.astroNotes.page = lastPage;
+          loadAstroNotesPage();
+        }
+      });
+    }
+    if (closeButton) {
+      closeButton.addEventListener("click", closeAstroNoteModal);
+    }
+    if (backButton) {
+      backButton.addEventListener("click", (event) => event.preventDefault());
+    }
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+      modalBackdrop.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+      });
+    }
     if (modal) {
       modal.addEventListener("click", (event) => event.stopPropagation());
+      modal.addEventListener("mousedown", (event) => event.stopPropagation());
     }
     if (saveButton) {
       saveButton.addEventListener("click", saveAstroNote);
-    }
-    if (summaryInput) {
-      summaryInput.addEventListener("input", () => {
-        state.astroNotes.form.summary = summaryInput.value;
-      });
     }
     if (notesInput) {
       notesInput.addEventListener("input", () => {
@@ -3739,18 +4010,38 @@
 
   async function loadAstroNotesPage() {
     const notes = state.astroNotes;
+    notes.pageSize = Number(notes.pageSize) > 0 ? Number(notes.pageSize) : 5;
     notes.isLoading = true;
     notes.error = "";
     render();
     try {
-      const offset = (notes.page - 1) * notes.pageSize;
-      const payload = await getJson(`/astro-notes?limit=${notes.pageSize}&offset=${offset}`);
-      const records = toArray(payload);
+      const query = new URLSearchParams({
+        page: String(notes.page),
+        rows_per_page: String(notes.pageSize),
+      });
+      const payload = await getJson(`/astro-notes?${query.toString()}`);
+      const records = astroNotesRecords(payload).slice(0, notes.pageSize);
       notes.records = records;
-      notes.total = Number(payload?.count ?? payload?.total ?? payload?.total_count ?? payload?.totalCount ?? records.length) || records.length;
+      const total = Number(
+        payload?.total_records ??
+        payload?.count ??
+        payload?.total ??
+        payload?.total_count ??
+        payload?.totalCount ??
+        payload?.meta?.count ??
+        payload?.meta?.total ??
+        payload?.meta?.total_records ??
+        payload?.pagination?.count ??
+        payload?.pagination?.total,
+      );
+      notes.total = Number.isFinite(total) && total >= 0 ? total : null;
+      const lastPage = astroNotesTotalPages();
+      if (notes.page > lastPage) {
+        notes.page = lastPage;
+      }
     } catch {
       notes.records = [];
-      notes.total = 0;
+      notes.total = null;
       notes.error = t("astroNotes.loadError");
     } finally {
       notes.isLoading = false;
@@ -3758,18 +4049,59 @@
     }
   }
 
+  function truncateCellText(value, maxLength = 100) {
+    const text = String(value ?? "-");
+    if (text.length <= maxLength) {
+      return { display: text, full: text };
+    }
+    return {
+      display: `${text.slice(0, maxLength)}...`,
+      full: text,
+    };
+  }
+
   function openAstroNoteCreate() {
     state.astroNotes.mode = "form";
+    state.astroNotes.dialogMode = "add";
     state.astroNotes.editingId = null;
+    state.astroNotes.activeCategory = "planet";
+    state.astroNotes.selections = [];
     state.astroNotes.form = { summary: "", notes: "" };
     state.astroNotes.error = "";
     state.astroNotes.message = "";
     render();
   }
 
+  function astroNotesTotalPages() {
+    const notes = state.astroNotes;
+    if (notes.total != null) {
+      return Math.max(1, Math.ceil(notes.total / notes.pageSize));
+    }
+    return Math.max(1, Math.ceil((notes.records?.length || 0) / notes.pageSize) || 1);
+  }
+
+  function openAstroNoteSearch() {
+    state.astroNotes.mode = "form";
+    state.astroNotes.dialogMode = "search";
+    state.astroNotes.editingId = null;
+    state.astroNotes.activeCategory = "planet";
+    state.astroNotes.selections = [];
+    state.astroNotes.form = { summary: "", notes: "" };
+    state.astroNotes.error = "";
+    state.astroNotes.message = "";
+    state.astroNotes.searchResults = [];
+    state.astroNotes.searchPage = 1;
+    state.astroNotes.searchPageSize = 1;
+    state.astroNotes.searchTotal = null;
+    state.astroNotes.searchLoading = false;
+    state.astroNotes.searchError = "";
+    render();
+  }
+
   function closeAstroNoteModal() {
     state.astroNotes.mode = "list";
     state.astroNotes.editingId = null;
+    state.astroNotes.dialogMode = "add";
     state.astroNotes.error = "";
     render();
   }
@@ -3780,10 +4112,13 @@
     try {
       const record = await getJson(`/astro-notes/${encodeURIComponent(noteId)}`);
       state.astroNotes.editingId = noteId;
+      state.astroNotes.dialogMode = "add";
+      state.astroNotes.selections = parseAstroNoteSummary(record.summary || record.title || "");
       state.astroNotes.form = {
         summary: record.summary || record.title || "",
         notes: record.notes || "",
       };
+      state.astroNotes.activeCategory = state.astroNotes.selections[0]?.categoryKey || "planet";
       state.astroNotes.mode = "form";
       render();
     } catch {
@@ -3793,8 +4128,11 @@
   }
 
   async function saveAstroNote() {
+    if (state.astroNotes.dialogMode === "search") {
+      return;
+    }
     const notes = state.astroNotes;
-    const summary = (notes.form.summary || "").trim();
+    const summary = astroNoteSelectionSummary().replace(/\s+/g, "_");
     const noteText = (notes.form.notes || "").trim();
     notes.error = "";
     notes.message = "";
@@ -3817,10 +4155,13 @@
         await postJson("/astro-notes", payload);
         notes.message = t("astroNotes.saved");
       }
-      notes.mode = "list";
       notes.editingId = null;
       notes.form = { summary: "", notes: "" };
+      notes.selections = [];
+      notes.activeCategory = "planet";
       await loadAstroNotesPage();
+      notes.mode = "form";
+      render();
     } catch (errorResponse) {
       notes.error = errorMessage(errorResponse, t("astroNotes.saveError"));
       render();
@@ -3828,6 +4169,154 @@
       notes.isSaving = false;
       render();
     }
+  }
+
+  function astroNoteSearchQuery() {
+    return (state.astroNotes.selections || [])
+      .map((item) => astroNoteSelectionSummaryItem(item))
+      .filter(Boolean)
+      .join("-")
+      .replace(/\s+/g, "_")
+      .trim();
+  }
+
+  function astroNoteSelectionSummaryItem(item) {
+    if (!item) return "";
+    return state.language === "mr" ? item.labelMr || item.labelEn || "" : item.labelEn || item.labelMr || "";
+  }
+
+  async function loadAstroNoteSearchResults() {
+    if (state.astroNotes.dialogMode !== "search") return;
+    const query = astroNoteSearchQuery();
+    state.astroNotes.searchLoading = true;
+    state.astroNotes.searchError = "";
+    render();
+    try {
+      if (!query) {
+        state.astroNotes.searchResults = [];
+        state.astroNotes.searchTotal = 0;
+        state.astroNotes.searchLoading = false;
+        return;
+      }
+      const params = new URLSearchParams({
+        query,
+        page: String(state.astroNotes.searchPage),
+        records_per_page: String(state.astroNotes.searchPageSize),
+      });
+      const payload = await getJson(`/astro-notes/search?${params.toString()}`);
+      const records = astroNotesRecords(payload);
+      state.astroNotes.searchResults = records;
+      const total = Number(
+        payload?.total_records ??
+        payload?.count ??
+        payload?.total ??
+        payload?.total_count ??
+        payload?.totalCount ??
+        payload?.meta?.count ??
+        payload?.meta?.total ??
+        payload?.meta?.total_records ??
+        payload?.pagination?.count ??
+        payload?.pagination?.total,
+      );
+      state.astroNotes.searchTotal = Number.isFinite(total) && total >= 0 ? total : null;
+      if (!records.length && state.astroNotes.searchTotal == null) {
+        state.astroNotes.searchTotal = 0;
+      }
+    } catch (errorResponse) {
+      state.astroNotes.searchResults = [];
+      state.astroNotes.searchTotal = null;
+      state.astroNotes.searchError = errorMessage(errorResponse, t("astroNotes.loadError"));
+    } finally {
+      state.astroNotes.searchLoading = false;
+      render();
+    }
+  }
+
+  function changeAstroNoteSearchPage(direction) {
+    const nextPage = Math.max(1, state.astroNotes.searchPage + direction);
+    if (nextPage === state.astroNotes.searchPage) return;
+    state.astroNotes.searchPage = nextPage;
+    loadAstroNoteSearchResults();
+  }
+
+  function toggleAstroNoteSelection(selectionKey) {
+    if (!selectionKey) return;
+    const [categoryKey, itemKey] = String(selectionKey).split(":");
+    const items = ASTRO_NOTE_ICON_MAP[categoryKey] || [];
+    const item = items.find((entry) => entry.key === itemKey);
+    if (!item) return;
+
+    const selections = state.astroNotes.selections || [];
+    const existingIndex = selections.findIndex((entry) => entry.categoryKey === categoryKey && entry.key === itemKey);
+    if (existingIndex >= 0) {
+      selections.splice(existingIndex, 1);
+    } else {
+      selections.push({
+        categoryKey,
+        key: itemKey,
+        labelEn: item.labelEn,
+        labelMr: item.labelMr,
+        label: astroNoteDisplayLabel(item),
+        glyph: item.glyph,
+        image: item.image,
+      });
+    }
+    state.astroNotes.selections = [...selections];
+    state.astroNotes.form.summary = astroNoteSelectionSummary();
+    render();
+    if (state.astroNotes.dialogMode === "search") {
+      state.astroNotes.searchPage = 1;
+      loadAstroNoteSearchResults();
+    }
+  }
+
+  function astroNoteSelectionSummary() {
+    return (state.astroNotes.selections || [])
+      .map((item) => {
+        return astroNoteDisplayLabel(item) || item.label || item.labelEn || item.labelMr || "";
+      })
+      .join("-")
+      .replace(/\s*-\s*/g, "-")
+      .trim();
+  }
+
+  function parseAstroNoteSummary(summary) {
+    const rawParts = String(summary || "")
+      .split("-")
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (!rawParts.length) return [];
+
+    const selections = [];
+    rawParts.forEach((part) => {
+      const matched = findAstroNoteItemByLabel(part);
+      if (matched) {
+        selections.push(matched);
+      }
+    });
+    return selections;
+  }
+
+  function findAstroNoteItemByLabel(label) {
+    const target = String(label || "").trim().toLowerCase();
+    for (const [categoryKey, items] of Object.entries(ASTRO_NOTE_ICON_MAP)) {
+      const match = items.find((item) => {
+        const labels = [item.labelEn, item.labelMr, item.label].filter(Boolean);
+        return labels.some((candidate) => String(candidate).trim().toLowerCase() === target);
+      });
+      if (match) {
+        return {
+          categoryKey,
+          key: match.key,
+          labelEn: match.labelEn,
+          labelMr: match.labelMr,
+          label: state.language === "mr" ? match.labelMr || match.labelEn : match.labelEn || match.labelMr,
+          glyph: match.glyph,
+          image: match.image,
+        };
+      }
+    }
+    return null;
   }
 
   async function deleteAstroNote(noteId) {
@@ -5525,7 +6014,44 @@
     if (value && Array.isArray(value.results)) {
       return value.results;
     }
+    if (value && Array.isArray(value.records)) {
+      return value.records;
+    }
+    if (value && Array.isArray(value.data)) {
+      return value.data;
+    }
     return value ? [value] : [];
+  }
+
+  function astroNotesRecords(payload) {
+    if (Array.isArray(payload)) {
+      return payload;
+    }
+    if (payload && Array.isArray(payload.records)) {
+      return payload.records;
+    }
+    if (payload && Array.isArray(payload.data)) {
+      return payload.data;
+    }
+    if (payload && Array.isArray(payload.items)) {
+      return payload.items;
+    }
+    if (payload && Array.isArray(payload.results)) {
+      return payload.results;
+    }
+    if (payload && payload.data && Array.isArray(payload.data.records)) {
+      return payload.data.records;
+    }
+    if (payload && payload.data && Array.isArray(payload.data.items)) {
+      return payload.data.items;
+    }
+    if (payload && payload.data && Array.isArray(payload.data.rows)) {
+      return payload.data.rows;
+    }
+    if (payload && Array.isArray(payload.rows)) {
+      return payload.rows;
+    }
+    return [];
   }
 
   function jatakIdForRecord(record) {
@@ -5554,4 +6080,6 @@
       .replace(/'/g, "&#039;");
   }
 })();
+
+
 
