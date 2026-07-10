@@ -2364,6 +2364,20 @@ a {
   font-weight: 400;
 }
 
+.north-diamond-chart .house-hit-zone {
+  cursor: pointer;
+  pointer-events: all;
+}
+
+.north-diamond-chart .house-hit-zone rect {
+  fill: transparent;
+  pointer-events: all;
+}
+
+.north-diamond-chart .house-hit-zone text {
+  pointer-events: none;
+}
+
 .north-diamond-chart .house-number {
   fill: var(--muted);
   font-size: 3.2px;
@@ -2463,6 +2477,10 @@ a {
   font-size: 12px;
   font-weight: 900;
   text-align: right;
+}
+
+.kundali-house-details-modal {
+  width: min(760px, calc(100vw - 28px));
 }
 
 .north-diamond-chart .debug-primary-slot {

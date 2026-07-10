@@ -1786,6 +1786,7 @@
       ${sidePanel.active === "karak-akarak" ? karakAkarakModalHtml(kundali) : ""}
       ${sidePanel.active === "bhavbala" ? bhavbalaModalHtml(kundali) : ""}
       ${sidePanel.active === "shadbal" ? shadbalModalHtml(kundali) : ""}
+      ${kundali.houseDetails ? houseDetailsModalHtml(kundali) : ""}
     `;
   }
 
@@ -1815,6 +1816,32 @@
           </div>
           <div class="kundali-tab-content">
             ${bhavbalaBodyHtml(panel)}
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function houseDetailsModalHtml(kundali) {
+    const details = kundali.houseDetails || {};
+    const houseNumber = Number(details.house_number || details.houseNumber || 0) || "";
+    const rows = Array.isArray(details.rows) ? details.rows : [];
+    return `
+      <div class="kundali-modal-backdrop" data-close-house-details="true">
+        <section class="kundali-tool-modal kundali-house-details-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(`Details of House #${houseNumber || "-"}`)}">
+          <div class="kundali-slider-header">
+            <div>
+              <strong>${escapeHtml(`Details of House #${houseNumber || "-"}`)}</strong>
+              <span>${escapeHtml(details.sign || details.sign_name || details.cusp_sign || "")}</span>
+            </div>
+            <button class="icon-button" data-close-house-details="true" type="button" aria-label="Close">X</button>
+          </div>
+          <div class="detail-matrix">
+            ${rows.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? "-")}</strong></div>`).join("")}
+          </div>
+          <div class="note-box">
+            <strong>Planets</strong>
+            <p>${escapeHtml((details.planets || []).join(", ") || "-")}</p>
           </div>
         </section>
       </div>
@@ -1854,7 +1881,7 @@
       "Sthanbal",
       "Kaalbal",
       "Digbala",
-      "Drigbal",
+      "DrikBal",
       "Cheshtabal",
       "Naisargik Bal",
     ];
@@ -1906,19 +1933,13 @@
           <table class="data-table shadbal-table">
             <thead>
               <tr>
-                <th>Total</th>
                 <th>Planet</th>
                 <th>Stana Bala</th>
                 <th>In rupas</th>
-                <th>Uchha</th>
-                <th>Saptavarga</th>
-                <th>Oja Yugma</th>
-                <th>Kendra</th>
-                <th>Drekkana</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.length ? rows.map(shadbalRowHtml).join("") : `<tr><td colspan="9"><div class="empty-state">No Sthanbal summary available.</div></td></tr>`}
+              ${rows.length ? rows.map(shadbalRowHtml).join("") : `<tr><td colspan="3"><div class="empty-state">No Sthanbal summary available.</div></td></tr>`}
             </tbody>
           </table>
         </div>
@@ -1940,13 +1961,12 @@
           <table class="data-table shadbal-table">
             <thead>
               <tr>
-                <th>Total</th>
                 <th>Planet</th>
                 ${componentKeys.map((key) => `<th>${escapeHtml(formatKaalbalLabel(key))}</th>`).join("")}
               </tr>
             </thead>
             <tbody>
-              ${rows.length ? rows.map((row) => kaalbalRowHtml(row, componentKeys)).join("") : `<tr><td colspan="${2 + componentKeys.length}"><div class="empty-state">No Kaalbal summary available.</div></td></tr>`}
+              ${rows.length ? rows.map((row) => kaalbalRowHtml(row, componentKeys)).join("") : `<tr><td colspan="${1 + componentKeys.length}"><div class="empty-state">No Kaalbal summary available.</div></td></tr>`}
             </tbody>
           </table>
         </div>
@@ -1977,7 +1997,7 @@
         </div>
       `;
     }
-    if (tabKey === "drigbal") {
+    if (tabKey === "drikbal") {
       if (tabData.isLoading) {
         return `<div class="placeholder-panel">${t("common.loading")}</div>`;
       }
@@ -1991,16 +2011,12 @@
             <thead>
               <tr>
                 <th>Planet</th>
-                <th>Nature</th>
-                <th>Benefic Aspects</th>
-                <th>Malefic Aspects</th>
-                <th>Drishti Pinda</th>
                 <th>Drig Bala</th>
                 <th>Rupas</th>
               </tr>
             </thead>
             <tbody>
-              ${rows.length ? rows.map((row) => drigbalRowHtml(row)).join("") : `<tr><td colspan="7"><div class="empty-state">No Drigbal summary available.</div></td></tr>`}
+              ${rows.length ? rows.map((row) => drikbalRowHtml(row)).join("") : `<tr><td colspan="3"><div class="empty-state">No DrikBal summary available.</div></td></tr>`}
             </tbody>
           </table>
         </div>
@@ -2064,25 +2080,17 @@
     const inRupas = stanaBala === null ? null : stanaBala / 60;
     return `
       <tr>
-        <td>${escapeHtml(formatAnalysisNumber(firstFiniteNumber(row?.total_score, row?.totalScore, row?.total)))}</td>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
         <td>${escapeHtml(formatAnalysisNumber(stanaBala))}</td>
         <td>${escapeHtml(formatAnalysisNumber(inRupas))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.components?.uchcha ?? row.uchha))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.components?.saptavargaja ?? row.saptavarga))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.components?.oja_yugma ?? row.oja_yugma ?? row.ojaYugma))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.components?.kendra ?? row.kendra))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.components?.drekkana ?? row.drekkana))}</td>
       </tr>
     `;
   }
 
   function kaalbalRowHtml(row, componentKeys) {
-    const total = firstFiniteNumber(row?.total_score, row?.totalScore, row?.kaalbal, row?.kaal_bal, row?.score);
     const components = row?.components || {};
     return `
       <tr>
-        <td>${escapeHtml(formatAnalysisNumber(total))}</td>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
         ${componentKeys.map((key) => `<td>${escapeHtml(formatAnalysisNumber(components?.[key]))}</td>`).join("")}
       </tr>
@@ -2090,8 +2098,8 @@
   }
 
   function digbalRowHtml(row) {
-    const virupa = firstFiniteNumber(row?.digbala_virupa, row?.digbalaVirupa);
-    const rupa = firstFiniteNumber(row?.digbala_rupa, row?.digbalaRupa);
+    const virupa = firstFiniteNumber(row?.digbala_virupa, row?.digbalaVirupa, row?.components?.dig_bala, row?.components?.digbala);
+    const rupa = firstFiniteNumber(row?.digbala_rupa, row?.digbalaRupa, row?.rupas, row?.strength_ratio);
     return `
       <tr>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
@@ -2101,23 +2109,19 @@
     `;
   }
 
-  function drigbalRowHtml(row) {
+  function drikbalRowHtml(row) {
     return `
       <tr>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
-        <td>${escapeHtml(row.nature || "-")}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.benefic_aspects))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.malefic_aspects))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.drishti_pinda))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.drig_bala))}</td>
-        <td>${escapeHtml(formatAnalysisNumber(row.rupas))}</td>
+        <td>${escapeHtml(formatAnalysisNumber(row.drig_bala ?? row.components?.drik_bala))}</td>
+        <td>${escapeHtml(formatAnalysisNumber(row.rupas ?? row.strength_ratio))}</td>
       </tr>
     `;
   }
 
   function cheshtabalRowHtml(row) {
-    const bala = firstFiniteNumber(row?.cheshta_bal, row?.cheshta_bala, row?.cheshtaBala);
-    const rupas = firstFiniteNumber(row?.cheshta_rupas, row?.cheshtaRupas);
+    const bala = firstFiniteNumber(row?.cheshta_bal, row?.cheshta_bala, row?.cheshtaBala, row?.components?.cheshta_bala);
+    const rupas = firstFiniteNumber(row?.cheshta_rupas, row?.cheshtaRupas, row?.rupas, row?.strength_ratio);
     return `
       <tr>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
@@ -2128,8 +2132,8 @@
   }
 
   function naisargikBalRowHtml(row) {
-    const bala = firstFiniteNumber(row?.naisargika_bala, row?.naisargikaBala);
-    const rupas = firstFiniteNumber(row?.rupas, row?.in_rupas, row?.inRupas);
+    const bala = firstFiniteNumber(row?.naisargika_bala, row?.naisargikaBala, row?.components?.naisargika_bala);
+    const rupas = firstFiniteNumber(row?.rupas, row?.in_rupas, row?.inRupas, row?.strength_ratio);
     return `
       <tr>
         <td><strong>${escapeHtml(formatShadbalPlanetLabel(row.planet || "-"))}</strong></td>
@@ -2150,7 +2154,7 @@
       sthanbal: "Sthanbal",
       kaalbal: "Kaalbal",
       digbala: "Digbala",
-      drigbal: "Drigbal",
+      drikbal: "DrikBal",
       cheshtabal: "Cheshta Bala",
       "naisargik-bal": "Naisargik Bal",
     };
@@ -2671,7 +2675,7 @@
     const showPlanets = chartKey !== "jaimini";
     return `
       <div class="north-chart">
-        ${northIndianSvgHtml(houses, markers, showPlanets)}
+        ${northIndianSvgHtml(houses, markers, showPlanets, chartKey)}
       </div>
     `;
   }
@@ -2854,7 +2858,7 @@
       .join("");
   }
 
-  function northIndianSvgHtml(houses, markers = [], showPlanets = true) {
+  function northIndianSvgHtml(houses, markers = [], showPlanets = true, chartKey = "") {
     const showDebugSlots = false;
     const layout = {
       1: { sign: [50, 36], primary: [36, 28, 28, 7, "horizontal"], overflow: [40, 20, 20, 6, "horizontal"] },
@@ -2883,7 +2887,10 @@
             if (!slot) return "";
             const houseMarkers = markers.filter((marker) => Number(marker.sign_index) === Number(house.sign_index));
             return `
-              <text x="${slot.sign[0]}" y="${slot.sign[1]}" text-anchor="middle" class="house-sign">${escapeHtml(house.sign_index ?? "-")}</text>
+              <g class="house-hit-zone" data-house-number="${escapeHtml(house.house)}" data-house-sign="${escapeHtml(house.sign)}" data-house-sign-index="${escapeHtml(house.sign_index)}" data-house-chart-key="${escapeHtml(chartKey)}">
+                <rect x="${slot.sign[0] - 6}" y="${slot.sign[1] - 6}" width="12" height="12" fill="transparent" />
+                <text x="${slot.sign[0]}" y="${slot.sign[1]}" text-anchor="middle" class="house-sign">${escapeHtml(house.sign_index ?? "-")}</text>
+              </g>
               ${showDebugSlots ? debugSlotHtml(slot) : ""}
               ${houseMarkers.length ? markerSlotHtml(houseMarkers, slot) : ""}
               ${showPlanets ? planetSlotHtml(house.bodies || [], slot) : ""}
@@ -3810,6 +3817,22 @@
         changeGocharTime(button.dataset.gocharSide, button.dataset.gocharDirection);
       });
     });
+    app.querySelectorAll(".north-diamond-chart").forEach((chart) => {
+      chart.addEventListener("click", (event) => {
+        const target = event.target?.closest?.("[data-house-number]");
+        if (!target || !chart.contains(target)) return;
+        event.preventDefault();
+        event.stopPropagation();
+        openHouseDetails(target.dataset.houseNumber, target.dataset.houseChartKey);
+      });
+    });
+    app.querySelectorAll("[data-close-house-details]").forEach((element) => {
+      element.addEventListener("click", (event) => {
+        if (event.target === element || event.target?.closest?.("[data-close-house-details]")) {
+          closeHouseDetails();
+        }
+      });
+    });
     const kundaliMoreButton = app.querySelector("#kundaliMoreButton");
     if (kundaliMoreButton) {
       kundaliMoreButton.addEventListener("click", toggleKundaliMoreMenu);
@@ -4468,6 +4491,7 @@
         sidePanel: { active: "", menuOpen: false, karakAkarak: {} },
         charts: { d1, d9 },
         jaimini: normalizeJaiminiPayload(jaiminiResult),
+        houseDetails: null,
         error: "",
       };
       render();
@@ -4536,7 +4560,6 @@
     }
     if (panelKey === "shadbal") {
       loadShadbalAnalysis(true);
-      loadKaalbalAnalysis(true);
     }
     if (panelKey === "karak-akarak") {
       loadKarakAkarakDetails();
@@ -4548,6 +4571,49 @@
     if (!kundali?.sidePanel?.active) return;
     kundali.sidePanel.active = "";
     render();
+  }
+
+  function openHouseDetails(houseNumber, chartKey = "") {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    const chart = resolveHouseDetailsChart(chartKey, kundali);
+    if (!chart) return;
+    const normalizedChart = normalizeChartPayload(chart, chartKey || kundali.leftChartKey || "d1");
+    const houses = buildNorthIndianHouses(normalizedChart, kundali.planetStatus);
+    const house = houses.find((item) => String(item.house) === String(houseNumber));
+    if (!house) return;
+    kundali.houseDetails = buildHouseDetailsPayload(house);
+    render();
+  }
+
+  function closeHouseDetails() {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.houseDetails = null;
+    render();
+  }
+
+  function resolveHouseDetailsChart(chartKey, kundali) {
+    const charts = kundali?.charts || {};
+    const activeChartKey = chartKey || kundali?.leftChartKey || "d1";
+    const cacheKey = activeChartKey === "gochar" ? gocharChartCacheKey("left") : activeChartKey;
+    return charts[cacheKey] || charts[activeChartKey] || charts.d1 || null;
+  }
+
+  function buildHouseDetailsPayload(house) {
+    const planets = Array.isArray(house?.bodies) ? house.bodies.map((body) => body.abbr || body.tooltip || body.body || body.name || body.key).filter(Boolean) : [];
+    return {
+      house_number: Number(house?.house || 0) || "",
+      sign: house?.sign || "",
+      sign_index: house?.sign_index || "",
+      planets,
+      rows: [
+        ["House #", house?.house || "-"],
+        ["Sign", house?.sign || "-"],
+        ["Sign Index", house?.sign_index || "-"],
+        ["Planets", planets.join(", ") || "-"],
+      ],
+    };
   }
 
   function bhavbalaRowHtml(row) {
@@ -4565,22 +4631,10 @@
   function setShadbalTab(tabKey) {
     const kundali = state.horoscope.kundali;
     if (!kundali?.sidePanel) return;
-    const validTabs = new Set(["sthanbal", "kaalbal", "digbala", "drigbal", "cheshtabal", "naisargik-bal"]);
+    const validTabs = new Set(["sthanbal", "kaalbal", "digbala", "drikbal", "cheshtabal", "naisargik-bal"]);
     kundali.sidePanel.shadbalActiveTab = validTabs.has(tabKey) ? tabKey : "sthanbal";
     render();
-    if (kundali.sidePanel.shadbalActiveTab === "sthanbal") {
-      loadShadbalAnalysis(true);
-    } else if (kundali.sidePanel.shadbalActiveTab === "kaalbal") {
-      loadKaalbalAnalysis(true);
-    } else if (kundali.sidePanel.shadbalActiveTab === "digbala") {
-      loadDigbalAnalysis();
-    } else if (kundali.sidePanel.shadbalActiveTab === "drigbal") {
-      loadDrigbalAnalysis();
-    } else if (kundali.sidePanel.shadbalActiveTab === "cheshtabal") {
-      loadCheshtabalAnalysis();
-    } else if (kundali.sidePanel.shadbalActiveTab === "naisargik-bal") {
-      loadNaisargikBalAnalysis();
-    }
+    ensureShadbalAnalysis();
   }
 
   async function loadShadbalAnalysis(forceReload = false) {
@@ -4593,38 +4647,40 @@
       kundali.sidePanel.shadbalAnalysis = {};
     }
     const cache = kundali.sidePanel.shadbalAnalysis;
-    if (!forceReload && (cache.sthanbal?.isLoading || cache.sthanbal?.rows)) return;
+    if (!forceReload && cache.raw && cache.sthanbal?.rows) return;
 
     cache.sthanbal = { isLoading: true, error: "", rows: [] };
+    cache.kaalbal = { isLoading: true, error: "", rows: [] };
+    cache.digbala = { isLoading: true, error: "", rows: [] };
+    cache.drikbal = { isLoading: true, error: "", rows: [] };
+    cache.cheshtabal = { isLoading: true, error: "", rows: [] };
+    cache["naisargik-bal"] = { isLoading: true, error: "", rows: [] };
     render();
 
     try {
-      const payload = await getJson(shadbalSthanbalApiPath(kundali.jatakId));
-      const rows = normalizeShadbalRows(payload);
+      const payload = await getJson(shadbalApiPath(kundali.jatakId));
+      const analysis = normalizeShadbalAnalysis(payload);
       if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis.sthanbal = {
-        isLoading: false,
-        error: "",
-        rows,
-      };
+      state.horoscope.kundali.sidePanel.shadbalAnalysis = analysis;
     } catch (errorResponse) {
       try {
         const payload = await getJson(shadbalSthanbalFallbackApiPath(kundali.jatakId));
-        const rows = normalizeShadbalRows(payload);
+        const analysis = normalizeShadbalAnalysis(payload);
         if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.sthanbal = {
-          isLoading: false,
-          error: "",
-          rows,
-        };
+        state.horoscope.kundali.sidePanel.shadbalAnalysis = analysis;
         render();
         return;
       } catch (fallbackErrorResponse) {
         if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.sthanbal = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Sthanbal summary."),
-          rows: [],
+        const message = errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Shadbal summary.");
+        state.horoscope.kundali.sidePanel.shadbalAnalysis = {
+          raw: null,
+          sthanbal: { isLoading: false, error: message, rows: [] },
+          kaalbal: { isLoading: false, error: message, rows: [] },
+          digbala: { isLoading: false, error: message, rows: [] },
+          drikbal: { isLoading: false, error: message, rows: [] },
+          cheshtabal: { isLoading: false, error: message, rows: [] },
+          "naisargik-bal": { isLoading: false, error: message, rows: [] },
         };
       }
     } finally {
@@ -4633,54 +4689,7 @@
   }
 
   async function loadKaalbalAnalysis(forceReload = false) {
-    const kundali = state.horoscope.kundali;
-    if (!kundali) return;
-    if (!kundali.sidePanel) {
-      kundali.sidePanel = { active: "shadbal", menuOpen: false, karakAkarak: {} };
-    }
-    if (!kundali.sidePanel.shadbalAnalysis) {
-      kundali.sidePanel.shadbalAnalysis = {};
-    }
-    const cache = kundali.sidePanel.shadbalAnalysis;
-    if (!forceReload && (cache.kaalbal?.isLoading || cache.kaalbal?.rows)) return;
-
-    cache.kaalbal = { isLoading: true, error: "", rows: [] };
-    render();
-
-    try {
-      const payload = await getJson(shadbalKaalbalApiPath(kundali.jatakId));
-      const { rows, componentKeys } = normalizeKaalbalRows(payload);
-      if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis.kaalbal = {
-        isLoading: false,
-        error: "",
-        rows,
-        componentKeys,
-      };
-    } catch (errorResponse) {
-      try {
-        const payload = await getJson(shadbalKaalbalFallbackApiPath(kundali.jatakId));
-        const { rows, componentKeys } = normalizeKaalbalRows(payload);
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.kaalbal = {
-          isLoading: false,
-          error: "",
-          rows,
-          componentKeys,
-        };
-        render();
-        return;
-      } catch (fallbackErrorResponse) {
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.kaalbal = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Kaalbal summary."),
-          rows: [],
-        };
-      }
-    } finally {
-      render();
-    }
+    await ensureShadbalAnalysis(forceReload);
   }
 
   async function loadBhavbalaAnalysis(forceReload = false) {
@@ -4722,198 +4731,29 @@
   }
 
   async function loadDigbalAnalysis() {
-    const kundali = state.horoscope.kundali;
-    if (!kundali) return;
-    if (!kundali.sidePanel) {
-      kundali.sidePanel = { active: "shadbal", menuOpen: false, karakAkarak: {} };
-    }
-    if (!kundali.sidePanel.shadbalAnalysis) {
-      kundali.sidePanel.shadbalAnalysis = {};
-    }
-    const cache = kundali.sidePanel.shadbalAnalysis;
-    if (cache.digbala?.isLoading || cache.digbala?.rows) return;
-
-    cache.digbala = { isLoading: true, error: "", rows: [] };
-    render();
-
-    try {
-      const payload = await getJson(shadbalDigbalApiPath(kundali.jatakId));
-      const { rows } = normalizeDigbalRows(payload);
-      if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis.digbala = {
-        isLoading: false,
-        error: "",
-        rows,
-      };
-    } catch (errorResponse) {
-      try {
-        const payload = await getJson(shadbalDigbalFallbackApiPath(kundali.jatakId));
-        const { rows } = normalizeDigbalRows(payload);
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.digbala = {
-          isLoading: false,
-          error: "",
-          rows,
-        };
-        render();
-        return;
-      } catch (fallbackErrorResponse) {
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.digbala = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Digbal summary."),
-          rows: [],
-        };
-      }
-    } finally {
-      render();
-    }
+    await ensureShadbalAnalysis();
   }
 
   async function loadDrigbalAnalysis() {
-    const kundali = state.horoscope.kundali;
-    if (!kundali) return;
-    if (!kundali.sidePanel) {
-      kundali.sidePanel = { active: "shadbal", menuOpen: false, karakAkarak: {} };
-    }
-    if (!kundali.sidePanel.shadbalAnalysis) {
-      kundali.sidePanel.shadbalAnalysis = {};
-    }
-    const cache = kundali.sidePanel.shadbalAnalysis;
-    if (cache.drigbal?.isLoading || cache.drigbal?.rows) return;
-
-    cache.drigbal = { isLoading: true, error: "", rows: [] };
-    render();
-
-    try {
-      const payload = await getJson(shadbalDrigbalApiPath(kundali.jatakId));
-      const { rows } = normalizeDrigbalRows(payload);
-      if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis.drigbal = {
-        isLoading: false,
-        error: "",
-        rows,
-      };
-    } catch (errorResponse) {
-      try {
-        const payload = await getJson(shadbalDrigbalFallbackApiPath(kundali.jatakId));
-        const { rows } = normalizeDrigbalRows(payload);
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.drigbal = {
-          isLoading: false,
-          error: "",
-          rows,
-        };
-        render();
-        return;
-      } catch (fallbackErrorResponse) {
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.drigbal = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Drigbal summary."),
-          rows: [],
-        };
-      }
-    } finally {
-      render();
-    }
+    await ensureShadbalAnalysis();
   }
 
   async function loadCheshtabalAnalysis() {
-    const kundali = state.horoscope.kundali;
-    if (!kundali) return;
-    if (!kundali.sidePanel) {
-      kundali.sidePanel = { active: "shadbal", menuOpen: false, karakAkarak: {} };
-    }
-    if (!kundali.sidePanel.shadbalAnalysis) {
-      kundali.sidePanel.shadbalAnalysis = {};
-    }
-    const cache = kundali.sidePanel.shadbalAnalysis;
-    if (cache.cheshtabal?.isLoading || cache.cheshtabal?.rows) return;
-
-    cache.cheshtabal = { isLoading: true, error: "", rows: [] };
-    render();
-
-    try {
-      const payload = await getJson(shadbalCheshtabalApiPath(kundali.jatakId));
-      const rows = normalizeCheshtabalRows(payload);
-      if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis.cheshtabal = {
-        isLoading: false,
-        error: "",
-        rows,
-      };
-    } catch (errorResponse) {
-      try {
-        const payload = await getJson(shadbalCheshtabalFallbackApiPath(kundali.jatakId));
-        const rows = normalizeCheshtabalRows(payload);
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.cheshtabal = {
-          isLoading: false,
-          error: "",
-          rows,
-        };
-        render();
-        return;
-      } catch (fallbackErrorResponse) {
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis.cheshtabal = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Cheshtabal summary."),
-          rows: [],
-        };
-      }
-    } finally {
-      render();
-    }
+    await ensureShadbalAnalysis();
   }
 
   async function loadNaisargikBalAnalysis() {
+    await ensureShadbalAnalysis();
+  }
+
+  async function ensureShadbalAnalysis(forceReload = false) {
     const kundali = state.horoscope.kundali;
     if (!kundali) return;
     if (!kundali.sidePanel) {
       kundali.sidePanel = { active: "shadbal", menuOpen: false, karakAkarak: {} };
     }
-    if (!kundali.sidePanel.shadbalAnalysis) {
-      kundali.sidePanel.shadbalAnalysis = {};
-    }
-    const cache = kundali.sidePanel.shadbalAnalysis;
-    if (cache["naisargik-bal"]?.isLoading || cache["naisargik-bal"]?.rows) return;
-
-    cache["naisargik-bal"] = { isLoading: true, error: "", rows: [] };
-    render();
-
-    try {
-      const payload = await getJson(shadbalNaisargikBalApiPath(kundali.jatakId));
-      const rows = normalizeNaisargikBalRows(payload);
-      if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-      state.horoscope.kundali.sidePanel.shadbalAnalysis["naisargik-bal"] = {
-        isLoading: false,
-        error: "",
-        rows,
-      };
-    } catch (errorResponse) {
-      try {
-        const payload = await getJson(shadbalNaisargikBalFallbackApiPath(kundali.jatakId));
-        const rows = normalizeNaisargikBalRows(payload);
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis["naisargik-bal"] = {
-          isLoading: false,
-          error: "",
-          rows,
-        };
-        render();
-        return;
-      } catch (fallbackErrorResponse) {
-        if (!state.horoscope.kundali?.sidePanel?.shadbalAnalysis) return;
-        state.horoscope.kundali.sidePanel.shadbalAnalysis["naisargik-bal"] = {
-          isLoading: false,
-          error: errorMessage(fallbackErrorResponse || errorResponse, "Unable to load Naisargik Bal summary."),
-          rows: [],
-        };
-      }
-    } finally {
-      render();
+    if (!kundali.sidePanel.shadbalAnalysis || forceReload) {
+      await loadShadbalAnalysis(forceReload);
     }
   }
 
@@ -4923,6 +4763,8 @@
     }
 
     const source =
+      payload?.shadbal ||
+      payload?.analysis?.shadbal ||
       payload?.sthanbal ||
       payload?.sthana_bala ||
       payload?.sthanabala ||
@@ -4930,6 +4772,7 @@
       payload?.analysis?.sthanbal ||
       payload?.analysis?.sthana_bala ||
       payload?.analysis?.sthan_bala ||
+      payload?.analysis?.shadbal ||
       payload?.planet_wise_values ||
       payload?.data ||
       payload;
@@ -4938,7 +4781,7 @@
       ? source
       : Array.isArray(source?.rows)
         ? source.rows
-        : Array.isArray(source?.planets)
+      : Array.isArray(source?.planets)
           ? source.planets
           : source?.planets && typeof source.planets === "object"
             ? Object.entries(source.planets).map(([planet, value]) => ({
@@ -4954,9 +4797,64 @@
                 }))
               : Array.isArray(source?.summary)
                 ? source.summary
+              : source && typeof source === "object" && source !== payload
+                ? Object.entries(source)
+                    .filter(([key, value]) => !["rows", "planets", "data", "summary", "analysis", "shadbal", "sthanbal"].includes(key) && value && typeof value === "object")
+                    .map(([planet, value]) => ({
+                      planet,
+                      ...value,
+                    }))
               : [];
 
     return rows.map(normalizeShadbalRow).filter((row) => row.planet);
+  }
+
+  function normalizeShadbalAnalysis(payload) {
+    const shadbala = payload?.shadbala || payload?.analysis?.shadbala || payload?.shadbal || payload?.analysis?.shadbal || payload;
+    const components = shadbala?.components || {};
+    const planets = Array.isArray(shadbala?.planets) ? shadbala.planets : Array.isArray(shadbala?.rows) ? shadbala.rows : [];
+    const planetRows = planets.map((row) => ({
+      planet: row?.planet || row?.body || row?.name || row?.graha || row?.grah || row?.planet_name || row?.planetName || row?.planet_key || row?.planetKey,
+      total_score: row?.total_score ?? row?.totalScore ?? row?.total,
+      rupas: row?.rupas ?? row?.in_rupas ?? row?.inRupas,
+      strength_ratio: row?.strength_ratio ?? row?.strengthRatio,
+      components: row?.components || {},
+      nature: row?.nature,
+    })).filter((row) => row.planet);
+
+    const tabRows = planetRows.length ? planetRows : normalizeShadbalRows(payload);
+    const componentKeys = Object.keys(components);
+    const byPlanet = (componentKey) => tabRows.map((row) => ({
+      planet: row.planet,
+      total_score: row.total_score,
+      rupas: row.rupas,
+      strength_ratio: row.strength_ratio,
+      components: {
+        [componentKey]: row.components?.[componentKey] ?? null,
+        ...row.components,
+      },
+    }));
+
+    return {
+      raw: shadbala,
+      sthanbal: { isLoading: false, error: "", rows: byPlanet("sthana_bala") },
+      kaalbal: { isLoading: false, error: "", rows: byPlanet("kaala_bala"), componentKeys: componentKeys.length ? ["kaala_bala"] : [] },
+      digbala: { isLoading: false, error: "", rows: byPlanet("dig_bala") },
+      drikbal: {
+        isLoading: false,
+        error: "",
+        rows: tabRows.map((row) => ({
+          ...row,
+          nature: row.nature || "-",
+          benefic_aspects: row.components?.benefic_aspects,
+          malefic_aspects: row.components?.malefic_aspects,
+          drishti_pinda: row.components?.drishti_pinda,
+          drig_bala: row.components?.drik_bala,
+        })),
+      },
+      cheshtabal: { isLoading: false, error: "", rows: byPlanet("cheshta_bala") },
+      "naisargik-bal": { isLoading: false, error: "", rows: byPlanet("naisargika_bala") },
+    };
   }
 
   function normalizeShadbalRow(row) {
@@ -5323,8 +5221,10 @@
 
   function resolveShadbalStanaBala(row) {
     const direct = firstFiniteNumber(
-      row?.total_score,
+      row?.components?.sthana_bala,
       row?.sthana_bala,
+      row?.sthanaBala,
+      row?.components?.sthanaBala,
       row?.sthan_bal,
       row?.sthanabala,
       row?.sthanbal,
@@ -5333,13 +5233,7 @@
     if (direct !== null) {
       return direct;
     }
-
-    const components = [row?.components?.uchcha, row?.components?.saptavargaja, row?.components?.oja_yugma, row?.components?.kendra, row?.components?.drekkana];
-    const total = components.reduce((sum, value) => {
-      const number = Number(value);
-      return Number.isFinite(number) ? sum + number : sum;
-    }, 0);
-    return total > 0 ? total : null;
+    return null;
   }
 
   function formatKaalbalLabel(value) {
@@ -5367,8 +5261,8 @@
     return Number.isFinite(number) ? number.toFixed(2) : String(value);
   }
 
-  function shadbalSthanbalApiPath(jatakId) {
-    return `/jatak/${encodeURIComponent(jatakId)}/analysis/sthanbal`;
+  function shadbalApiPath(jatakId) {
+    return `/jatak/${encodeURIComponent(jatakId)}/analysis/shadbal`;
   }
 
   function shadbalSthanbalFallbackApiPath(jatakId) {
