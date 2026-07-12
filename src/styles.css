@@ -2254,6 +2254,10 @@ a {
   color: #9a6a00;
 }
 
+.kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-brown {
+  color: #654321;
+}
+
 .kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-red {
   color: #8b0000;
 }
@@ -2270,6 +2274,177 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.vimshottari-panel {
+  display: grid;
+  gap: 6px;
+  max-width: 100%;
+}
+
+.vimshottari-current-card {
+  display: block;
+  padding: 7px 8px;
+  border: 1px solid rgba(181, 31, 115, 0.28);
+  border-left: 5px solid #b51f73;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 16% 12%, rgba(255, 211, 105, 0.46), transparent 34%),
+    linear-gradient(145deg, #fff3d7 0%, #ffe2f1 100%);
+  box-shadow: 0 10px 22px rgba(181, 31, 115, 0.16);
+}
+
+.vimshottari-header-trail {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.vimshottari-header-chip {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  border: 1px solid rgba(181, 31, 115, 0.16);
+  border-radius: 999px;
+  padding: 3px 8px 3px 3px;
+  color: inherit;
+  background: rgba(255, 255, 255, 0.68);
+  font: inherit;
+}
+
+.vimshottari-header-chip.clickable {
+  cursor: pointer;
+}
+
+.vimshottari-header-chip.clickable:hover {
+  border-color: rgba(181, 31, 115, 0.34);
+  box-shadow: 0 5px 12px rgba(181, 31, 115, 0.12);
+}
+
+.vimshottari-current-icon {
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(21, 91, 150, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.45), 0 5px 12px rgba(21, 91, 150, 0.12);
+  overflow: hidden;
+}
+
+.vimshottari-current-icon img {
+  display: block;
+}
+
+.vimshottari-current-icon:not(.row-icon) {
+  width: 32px;
+  height: 32px;
+}
+
+.vimshottari-current-icon.row-icon {
+  width: 22px;
+  height: 22px;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, 0.45), 0 3px 8px rgba(21, 91, 150, 0.1);
+}
+
+.vimshottari-current-icon img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.vimshottari-current-icon.row-icon img {
+  width: 18px;
+  height: 18px;
+}
+
+.vimshottari-current-card span {
+  display: block;
+  color: var(--muted);
+  font-size: 9px;
+  font-weight: 900;
+}
+
+.vimshottari-current-card strong {
+  display: block;
+  color: #b51f73;
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.vimshottari-list,
+.vimshottari-kv-list {
+  display: grid;
+  gap: 5px;
+}
+
+.vimshottari-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 5px;
+}
+
+.vimshottari-row,
+.vimshottari-kv-list div {
+  display: grid;
+  grid-template-columns: 22px minmax(34px, 0.8fr) minmax(58px, 1fr) minmax(58px, 1fr);
+  gap: 2px;
+  align-items: center;
+  padding: 4px 4px;
+  border: 1px solid #dce8f3;
+  border-radius: 10px;
+  background: #ffffff;
+  box-shadow: 0 3px 10px rgba(25, 62, 95, 0.06);
+  font-size: 8px;
+  font-weight: 800;
+}
+
+.vimshottari-row.clickable {
+  width: 100%;
+  min-width: 0;
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+}
+
+.vimshottari-row.disabled {
+  cursor: default;
+}
+
+.vimshottari-row.clickable:hover {
+  border-color: rgba(21, 91, 150, 0.24);
+  background: #f7fbff;
+}
+
+.vimshottari-row strong,
+.vimshottari-kv-list span {
+  color: #155f9d;
+  font-weight: 900;
+}
+
+.vimshottari-row span,
+.vimshottari-kv-list strong {
+  min-width: 0;
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vimshottari-row.active {
+  border-color: rgba(181, 31, 115, 0.32);
+  background: linear-gradient(135deg, #fff7dc, #ffe8f4);
+  box-shadow: 0 5px 14px rgba(181, 31, 115, 0.14);
+}
+
+.vimshottari-row.active strong {
+  color: #b51f73;
 }
 
 .compact-empty-state {
@@ -2380,7 +2555,7 @@ a {
 .kundali-gochar-tile {
   display: grid;
   align-content: start;
-  gap: 7px;
+  gap: 5px;
   box-sizing: border-box;
   width: 100px;
   min-height: 0;
@@ -2448,7 +2623,7 @@ a {
 
 .kundali-time-step-list {
   display: grid;
-  gap: 4px;
+  gap: 3px;
 }
 
 .kundali-time-step-row {
@@ -2456,7 +2631,7 @@ a {
   grid-template-columns: 18px 1fr 18px;
   align-items: center;
   gap: 2px;
-  min-height: 20px;
+  min-height: 18px;
 }
 
 .kundali-time-step-row button {
@@ -2506,6 +2681,19 @@ a {
   color: var(--text);
   background: #ffffff;
   cursor: pointer;
+}
+
+.chart-picker.disabled .chart-picker-button,
+.chart-picker-button:disabled {
+  color: var(--muted);
+  background: #f3f6f9;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.chart-picker.disabled .chart-picker-button::after,
+.chart-picker-button:disabled::after {
+  opacity: 0.35;
 }
 
 .chart-picker-button::after {
@@ -2658,6 +2846,36 @@ a {
   overflow: visible;
 }
 
+.kp-nadi-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 10px;
+}
+
+.kp-nadi-filter-bar label {
+  display: grid;
+  min-width: 180px;
+}
+
+.kp-nadi-filter-bar span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kp-nadi-filter-bar select {
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  color: var(--text);
+  background: #ffffff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .kundali-detail-table .nakshatra-nadi-grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(138px, 1fr));
@@ -2687,6 +2905,43 @@ a {
   overflow: visible;
 }
 
+.kundali-detail-table .nakshatra-nadi-dasha-badges {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  z-index: 2;
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.kundali-detail-table .nadi-dasha-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid rgba(21, 91, 150, 0.18);
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 3px 8px rgba(25, 62, 95, 0.16);
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.kundali-detail-table .nadi-dasha-badge.dasha {
+  color: #0f4b7b;
+}
+
+.kundali-detail-table .nadi-dasha-badge.bhukti {
+  color: #4b006e;
+}
+
+.kundali-detail-table .nadi-dasha-badge.antara {
+  color: #9a4b00;
+}
+
 .kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:hover,
 .kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:focus-within {
   z-index: 20;
@@ -2714,12 +2969,54 @@ a {
   white-space: nowrap;
 }
 
+.nakshatra-nadi-row code em {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  min-height: 18px;
+  margin: 0 1px;
+  border-radius: 50%;
+  font-style: italic;
+  font-weight: 950;
+  line-height: 1;
+  text-shadow: none;
+  box-shadow: 0 2px 6px rgba(10, 30, 45, 0.18);
+}
+
+.nakshatra-nadi-row code em.nadi-rule-positive {
+  border: 1px solid #013b1f;
+  color: #ffffff;
+  background: #013b1f;
+}
+
+.nakshatra-nadi-row code em.nadi-rule-negative {
+  border: 1px solid #6f0000;
+  color: #ffe66d;
+  background: #8b0000;
+}
+
 .kundali-detail-table .nakshatra-nadi-row strong {
   color: var(--text);
   font-size: 12px;
   font-weight: 900;
   line-height: 1.1;
   white-space: nowrap;
+}
+
+.kundali-detail-table .nakshatra-nadi-row strong.nadi-planet-green {
+  color: #087a39;
+}
+
+.kundali-detail-table .nakshatra-nadi-row strong.nadi-planet-brown {
+  color: #654321;
+}
+
+.kundali-detail-table .nakshatra-nadi-row strong.nadi-planet-red {
+  color: #8b0000;
+}
+
+.kundali-detail-table .nakshatra-nadi-row strong.nadi-planet-default {
+  color: var(--text);
 }
 
 .kundali-detail-table .nakshatra-nadi-row code {
@@ -3042,6 +3339,25 @@ a {
   color: var(--blue-700);
   overflow-wrap: anywhere;
   text-align: center;
+}
+
+.gochar-chart-time-label {
+  justify-self: center;
+  max-width: 88%;
+  margin-top: 3px;
+  padding: 2px 10px;
+  border: 1px solid rgba(21, 91, 150, 0.16);
+  border-radius: 999px;
+  color: #0f4b7b;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 3px 10px rgba(25, 62, 95, 0.08);
+  font-size: 9px;
+  font-weight: 900;
+  line-height: 1.15;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gochar-controls {

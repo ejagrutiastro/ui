@@ -1,0 +1,14 @@
+{
+    "Marriage":{
+        "Normal Marriage":{
+            "+":[2,7,11],
+            "-":[1,6,10]
+        }
+    },
+    "Education":{
+       "Primary Education":{
+            "+":[1,4],
+            "-":[12,3]
+        }
+    }
+}
