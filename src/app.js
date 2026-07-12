@@ -1558,6 +1558,14 @@
       `;
     }
 
+    if (horoscope.mode === "kp-view" && horoscope.kpView) {
+      return `
+        <main class="page-content">
+          ${kpViewHtml()}
+        </main>
+      `;
+    }
+
     if (horoscope.mode === "kundali" && horoscope.kundali) {
       return horoscopeKundaliHtml();
     }
@@ -1626,6 +1634,9 @@
                               <td>${escapeHtml(record.city_name || record.city || record.birth_place || "-")}</td>
                               <td>
                                 <div class="row-actions">
+                                  <button class="icon-button" data-kp-jatak="${escapeHtml(jatakId)}" title="KP" aria-label="KP" type="button" ${jatakId ? "" : "disabled"}>
+                                    <img src="./src/images/KP.jpg" alt="" />
+                                  </button>
                                   <button class="icon-button" data-edit-jatak="${escapeHtml(jatakId)}" title="${t("horoscope.updateAction")}" aria-label="${t("horoscope.updateAction")}" type="button" ${jatakId ? "" : "disabled"}>
                                     <img src="${ICONS.edit}" alt="" />
                                   </button>
@@ -1736,40 +1747,153 @@
     const leftChartKey = kundali.leftChartKey || "d1";
     const rightChartKey = kundali.rightChartKey || "d9";
     const charts = kundali.charts || {};
-    const leftChart = leftChartKey === "gochar" ? charts[gocharChartCacheKey("left")] : charts[leftChartKey];
-    const rightChart = rightChartKey === "gochar" ? charts[gocharChartCacheKey("right")] : charts[rightChartKey];
+    const leftChart = charts[chartCacheKeyForSide("left", leftChartKey)];
+    const rightChart = charts[chartCacheKeyForSide("right", rightChartKey)];
     const detailChart = leftChart && !leftChart.unavailable ? leftChart : charts.d1;
     return `
       <main class="page-content kundali-page-content">
         ${kundaliSideTabsHtml(kundali)}
-        <section class="feature-panel compact-panel kundali-hero slim-kundali-header">
-          <div>
-            <h1>${t("horoscope.kundaliTitle")}</h1>
-          </div>
-          <div class="header-button-group">
-            <label class="chart-type-select">
-              <span>${t("horoscope.chartType")}</span>
-              <select id="kundaliChartType">
-                <option value="north" selected>${t("horoscope.northIndian")}</option>
-                <option value="south" disabled>${t("horoscope.southIndian")}</option>
-              </select>
-            </label>
-            <button class="ghost-button light-button" id="closeKundaliView" type="button">${t("location.back")}</button>
-          </div>
-        </section>
-        ${kundaliBirthDetailsHtml(kundali.record)}
         ${kundali.error ? `<div class="form-error">${escapeHtml(kundali.error)}</div>` : ""}
         <section class="panel kundali-panel">
-          <img class="kundali-watermark" src="./src/images/kundali1.jpg" alt="" />
-          <div class="kundali-grid">
-            <div class="kundali-cell kundali-heading">${chartSelectHtml("leftKundaliChart", leftChartKey)}</div>
-            <div class="kundali-cell kundali-heading">${chartSelectHtml("rightKundaliChart", rightChartKey)}</div>
-            <div class="kundali-cell chart-cell">${chartPanelHtml(leftChart, leftChartKey, "left")}</div>
-            <div class="kundali-cell chart-cell">${chartPanelHtml(rightChart, rightChartKey, "right")}</div>
+          <div class="kundali-chart-layout">
+            <div class="kundali-chart-cluster">
+              <div class="kundali-grid">
+                <div class="kundali-cell kundali-heading">${chartSelectHtml("leftKundaliChart", leftChartKey)}</div>
+                <div class="kundali-cell kundali-heading">${chartSelectHtml("rightKundaliChart", rightChartKey)}</div>
+                <div class="kundali-cell chart-cell">${chartPanelHtml(leftChart, leftChartKey, "left")}</div>
+                <div class="kundali-cell chart-cell">${chartPanelHtml(rightChart, rightChartKey, "right")}</div>
+              </div>
+              ${kundaliInfoTilesHtml(kundali)}
+            </div>
+            <div class="kundali-right-panel">
+              <div class="kundali-right-control-row">
+                ${kundaliChoiceSelectHtml(kundali)}
+                <div class="kundali-right-tabs" role="tablist" aria-label="Kundali quick panels">
+                  <button class="kundali-right-tab ${kundali.rightPanelActive === "vimshottari-dasha" ? "active" : ""}" data-kundali-right-panel="vimshottari-dasha" type="button" role="tab" aria-selected="${kundali.rightPanelActive === "vimshottari-dasha" ? "true" : "false"}">Vimshottari Dasha</button>
+                  <button class="kundali-right-tab ${kundali.rightPanelActive === "yogini-dasha" ? "active" : ""}" data-kundali-right-panel="yogini-dasha" type="button" role="tab" aria-selected="${kundali.rightPanelActive === "yogini-dasha" ? "true" : "false"}">Yogini Dasha</button>
+                </div>
+              </div>
+              <div class="kundali-right-separator"></div>
+              <div class="kundali-right-panel-body">
+                ${kundaliRightPanelBodyHtml(kundali)}
+              </div>
+            </div>
           </div>
         </section>
-        ${chartDetailsTableHtml(detailChart, "d1")}
+        ${kundaliDetailPanelHtml(detailChart, "d1")}
       </main>
+    `;
+  }
+
+  function kpViewHtml() {
+    const view = state.horoscope.kpView || {};
+    const d1Chart = view.charts?.d1;
+    const chalitChart = view.charts?.chalit;
+    const leftChartKey = view.leftChartKey || "d1";
+    const rightChartKey = view.rightChartKey || "chalit";
+    return `
+      <section class="kp-view-grid">
+        <div class="kp-view-grid-inner">
+          <div class="kundali-cell chart-cell">
+            <div class="kundali-heading">${chartSelectHtml("kpLeftChart", leftChartKey)}</div>
+            <div class="kp-chart-title">D1-Chart</div>
+            ${chartPanelHtml(d1Chart, "d1", "left")}
+          </div>
+          <div class="kundali-cell chart-cell">
+            <div class="kundali-heading">${chartSelectHtml("kpRightChart", rightChartKey)}</div>
+            <div class="kp-chart-title">Bhav Chalit-Chart</div>
+            ${chartPanelHtml(chalitChart, "chalit", "right")}
+          </div>
+        </div>
+      </section>
+    `;
+  }
+
+  function kundaliDetailPanelOptions() {
+    return [
+      { key: "chart-details-d1", label: "Rashi Chart", image: "./src/images/D1Chart.jpg" },
+      { key: "planets", label: "Planets", image: "./src/images/planets.jpg" },
+      { key: "cusp", label: "Cusp", image: "./src/images/BinduKundali.png" },
+      { key: "nakshatra-nadi", label: "Yogini Dasha", image: "./src/images/nakshatra.jpg" },
+    ];
+  }
+
+  function kundaliChoiceSelectHtml(kundali) {
+    const selectedChoice = kundali.kundaliChoice || "panchanga";
+    const selectedLabel = selectedChoice === "kp-astrology" ? "KP - Astrology" : "Panchanga";
+    const selectedDescription = selectedChoice === "kp-astrology" ? "KP astrology tools" : "Daily Panchanga details";
+    return `
+      <div class="chart-picker kundali-choice-picker" data-chart-picker="kundaliChoice">
+        <button class="chart-picker-button kundali-choice-button" type="button" aria-haspopup="listbox" aria-expanded="false">
+          <span>${escapeHtml(selectedLabel)}</span>
+          <small>${escapeHtml(selectedDescription)}</small>
+        </button>
+        <div class="chart-picker-menu kundali-choice-menu" role="listbox" aria-label="Kundali choices">
+          <button class="chart-picker-option ${selectedChoice === "panchanga" ? "active" : ""}" data-kundali-choice="panchanga" role="option" type="button" aria-selected="${selectedChoice === "panchanga" ? "true" : "false"}">
+            <strong>Panchanga</strong>
+            <span>Daily Panchanga details</span>
+          </button>
+          <button class="chart-picker-option ${selectedChoice === "kp-astrology" ? "active" : ""}" data-kundali-choice="kp-astrology" role="option" type="button" aria-selected="${selectedChoice === "kp-astrology" ? "true" : "false"}">
+            <strong>KP - Astrology</strong>
+            <span>KP astrology tools</span>
+          </button>
+        </div>
+      </div>
+    `;
+  }
+
+  function kundaliRightPanelBodyHtml(kundali) {
+    const activePanel = kundali.rightPanelActive || "";
+    if (activePanel === "yogini-dasha") {
+      return `<div class="empty-state">Yogini Dasha details will come here soon.</div>`;
+    }
+    if (activePanel === "vimshottari-dasha") {
+      return `<div class="empty-state">Vimshottari Dasha details will come here soon.</div>`;
+    }
+    return "";
+  }
+
+  function kundaliDetailPanelHtml(chart, chartKey) {
+    const kundali = state.horoscope.kundali || {};
+    const activePanel = kundali.detailPanelActive || "chart-details-d1";
+    const options = kundaliDetailPanelOptions();
+    const activeOption = options.find((option) => option.key === activePanel);
+    if ((kundali.kundaliChoice || "panchanga") === "kp-astrology") {
+      return `
+        <section class="panel table-panel kundali-detail-table kp-detail-placeholder">
+          <div class="kundali-detail-body">
+            ${nakshatraNadiTilesHtml(kundali)}
+          </div>
+        </section>
+      `;
+    }
+    const content = activePanel === "chart-details-d1"
+      ? chartDetailsTableHtml(chart, chartKey)
+      : activePanel === "cusp"
+        ? cuspDetailsTableHtml(kundali)
+        : activePanel === "nakshatra-nadi"
+          ? `<div class="empty-state">Yogini Dasha details will come here soon.</div>`
+        : `<div class="empty-state">${escapeHtml(activeOption?.label || "Details")} details will come here.</div>`;
+    return `
+      <section class="panel table-panel kundali-detail-table">
+        <div class="kundali-detail-toolbar" role="tablist" aria-label="Kundali detail tools">
+          ${options.map((option) => `
+            <button
+              class="kundali-detail-tool ${activePanel === option.key ? "active" : ""}"
+              data-kundali-detail-panel="${escapeHtml(option.key)}"
+              role="tab"
+              aria-selected="${activePanel === option.key ? "true" : "false"}"
+              title="${escapeHtml(option.label)}"
+              type="button"
+            >
+              <span class="kundali-detail-tool-label">${escapeHtml(option.label)}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="kundali-detail-body">
+          ${content}
+        </div>
+      </section>
     `;
   }
 
@@ -1846,6 +1970,131 @@
         </section>
       </div>
     `;
+  }
+
+  function cuspDetailsTableHtml(kundali) {
+    const details = kundali.cuspDetails;
+    if (details?.isLoading) {
+      return `<div class="placeholder-panel">${t("common.loading")}</div>`;
+    }
+    if (details?.error) {
+      return `<div class="form-error">${escapeHtml(details.error)}</div>`;
+    }
+    const rows = Array.isArray(details?.rows) ? details.rows.slice(0, 12) : [];
+    if (!rows.length) {
+      return `<div class="empty-state">No cusp details available.</div>`;
+    }
+    const columns = Array.isArray(details?.columns) && details.columns.length
+      ? details.columns
+      : Object.keys(rows[0] || {});
+    return `
+      <div class="table-wrap cusp-table-wrap">
+        <table class="data-table cusp-detail-table">
+          <thead>
+            <tr>
+              ${columns.map((column) => `<th>${escapeHtml(formatCuspLabel(column))}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                ${columns.map((column) => `<td>${escapeHtml(column === "cusp_longitude" || column === "degree_in_sign" ? formatCuspLongitude(row?.[column]) : formatCuspValue(row?.[column]))}</td>`).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function nakshatraNadiTilesHtml(kundali) {
+    const details = kundali.nakshatraNadi;
+    if (details?.isLoading) {
+      return `<div class="placeholder-panel">${t("common.loading")}</div>`;
+    }
+    if (details?.error) {
+      return `<div class="form-error">${escapeHtml(details.error)}</div>`;
+    }
+    const rows = Array.isArray(details?.rows) ? details.rows.slice(0, 12) : [];
+    if (!rows.length) {
+      return `<div class="empty-state">No Yogini Dasha details available.</div>`;
+    }
+    return `
+      <div class="nakshatra-nadi-grid">
+        ${rows.map((row, index) => `
+          <article class="nakshatra-nadi-tile ${index >= 6 ? "tooltip-up" : "tooltip-down"}" tabindex="0">
+            <div class="nakshatra-nadi-content">
+              ${nakshatraNadiValueRowHtml("Planet", row.current_planet)}
+              ${nakshatraNadiValueRowHtml("Star Lord", row.nakshatra_lord)}
+              ${nakshatraNadiValueRowHtml("Sub Lord", row.sub_lord)}
+            </div>
+            ${nakshatraNadiPlanetImageHtml(row.current_planet?.planet_key)}
+            <div class="nakshatra-nadi-tooltip" role="tooltip">
+              ${nakshatraNadiTooltipRowHtml("Planet", row.current_planet)}
+              ${nakshatraNadiTooltipRowHtml("Star Lord", row.nakshatra_lord)}
+              ${nakshatraNadiTooltipRowHtml("Sub Lord", row.sub_lord)}
+            </div>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function nakshatraNadiTooltipRowHtml(label, item) {
+    const planet = item?.planet_key || "-";
+    const value = formatNakshatraNadiValue(item?.value);
+    return `
+      <div class="nakshatra-nadi-tooltip-row">
+        <span>${escapeHtml(label)}</span>
+        <strong>${escapeHtml(planet)}</strong>
+        <code>${escapeHtml(value)}</code>
+      </div>
+    `;
+  }
+
+  function nakshatraNadiPlanetImageHtml(planetName) {
+    const normalized = normalizePlanetName(planetName);
+    const imageMap = {
+      sun: "sun.jpg",
+      moon: "moon.jpg",
+      mars: "mars.jpg",
+      mercury: "mercury.jpg",
+      jupiter: "jupiter.jpg",
+      venus: "venus.jpg",
+      saturn: "saturn.jpg",
+      rahu: "rahu.jpg",
+      ketu: "ketu.jpg",
+      uranus: "planet-uranus.svg",
+      neptune: "planet-neptune.svg",
+      pluto: "planet-pluto.svg",
+    };
+    const fileName = imageMap[normalized] || `planet-${normalized}.svg`;
+    return `
+      <div class="nakshatra-nadi-planet-image" aria-hidden="true">
+        <img src="./src/images/${escapeHtml(fileName)}" alt="" />
+      </div>
+    `;
+  }
+
+  function nakshatraNadiValueRowHtml(label, item) {
+    const colorClass = nakshatraNadiPlanetColorClass(item?.planet_key);
+    const planet = item?.planet_key || "-";
+    const value = formatNakshatraNadiValue(item?.value);
+    return `
+      <div class="nakshatra-nadi-row">
+        <span>${escapeHtml(label)} :</span>
+        <strong class="${escapeHtml(colorClass)}">${escapeHtml(planet)}</strong>
+        <code>- ${escapeHtml(value)}</code>
+      </div>
+    `;
+  }
+
+  function nakshatraNadiPlanetColorClass(name) {
+    const normalized = normalizePlanetName(name);
+    if (["moon", "venus", "mercury", "jupiter"].includes(normalized)) return "nadi-planet-green";
+    if (normalized === "sun") return "nadi-planet-yellow";
+    if (["saturn", "mars", "rahu", "ketu"].includes(normalized)) return "nadi-planet-red";
+    return "nadi-planet-default";
   }
 
   function bhavbalaBodyHtml(panel) {
@@ -2357,20 +2606,74 @@
 
   function kundaliBirthDetailsHtml(record) {
     if (!record) return "";
-    const rows = [
-      [t("horoscope.name"), record.jatak_full_name || record.name],
-      [t("horoscope.dob"), record.date],
-      [t("horoscope.time"), record.time],
-      [t("location.city"), record.city_name || record.city || record.birth_place],
-      [t("location.latitude"), record.latitude],
-      [t("location.longitude"), record.longitude],
-      [t("horoscope.timezone"), record.timezone],
+    const values = [
+      record.jatak_full_name || record.name,
+      record.date,
+      record.time,
+      record.city_name || record.city || record.birth_place,
+    ].map((value) => value ?? "-");
+    return `
+      <aside class="kundali-native-details">
+        ${values.map((value) => `<span>${escapeHtml(value)}</span>`).join("")}
+      </aside>
+    `;
+  }
+
+  function kundaliInfoTilesHtml(kundali) {
+    return `
+      <div class="kundali-info-tile-stack">
+        ${kundaliBirthDetailsHtml(kundali.record)}
+        ${kundaliGocharTileHtml(kundali)}
+      </div>
+    `;
+  }
+
+  function kundaliGocharTileHtml(kundali) {
+    const side = kundali.gocharTileSide === "right" ? "right" : "left";
+    const chartKey = side === "right" ? kundali.rightChartKey : kundali.leftChartKey;
+    const chart = activeChartForSide(kundali, side) || {};
+    const timestamp = String(chart?.calculated_at || nativeBirthIsoTimestamp(kundali.record) || formatNativeBirthTimestamp(kundali.record));
+    const timestampParts = formatKundaliTileTimestamp(timestamp);
+    const steps = [
+      ["year", "1 Year"],
+      ["month", "1 Month"],
+      ["week", "1 Week"],
+      ["day", "1 Day"],
+      ["10min", "10 Min"],
+      ["1min", "1 Min"],
     ];
     return `
-      <section class="panel kundali-native-details">
-        ${rows.map(([label, value]) => `<div><span>${escapeHtml(label)}</span><strong>${escapeHtml(value ?? "-")}</strong></div>`).join("")}
-      </section>
+      <aside class="kundali-gochar-tile">
+        <div class="kundali-side-toggle" role="group" aria-label="Time control chart side">
+          <button class="${side === "left" ? "active" : ""}" data-gochar-tile-side="left" type="button">Left</button>
+          <button class="${side === "right" ? "active" : ""}" data-gochar-tile-side="right" type="button">Right</button>
+        </div>
+        <div class="gochar-timestamp">
+          <span>${escapeHtml(timestampParts.date)}</span>
+          <strong>${escapeHtml(timestampParts.time)}</strong>
+        </div>
+        <div class="kundali-time-step-list">
+          ${steps.map(([step, label]) => `
+            <div class="kundali-time-step-row">
+              <button data-gochar-side="${escapeHtml(side)}" data-gochar-chart-key="${escapeHtml(chartKey)}" data-gochar-step="${escapeHtml(step)}" data-gochar-direction="backward" type="button" aria-label="Previous ${escapeHtml(label)}">-</button>
+              <span>${escapeHtml(label)}</span>
+              <button data-gochar-side="${escapeHtml(side)}" data-gochar-chart-key="${escapeHtml(chartKey)}" data-gochar-step="${escapeHtml(step)}" data-gochar-direction="forward" type="button" aria-label="Next ${escapeHtml(label)}">+</button>
+            </div>
+          `).join("")}
+        </div>
+      </aside>
     `;
+  }
+
+  function formatKundaliTileTimestamp(value) {
+    const text = String(value || "").trim();
+    if (!text) return { date: "-", time: "-" };
+    const normalized = text.replace("T", " ");
+    const [datePart, timePart = ""] = normalized.split(/\s+/);
+    return {
+      date: datePart || "-",
+      time: timePart ? timePart.replace(/\.\d+Z?$/, "").replace(/Z$/, "") : "-",
+    };
   }
 
   function chartSelectHtml(id, selected) {
@@ -2403,7 +2706,7 @@
     }
     return `
       ${northIndianChartHtml(chart, chartKey)}
-      ${gocharControlsHtml(chart, chartKey, side)}
+      ${chartTimingControlsHtml(chart, chartKey, side)}
     `;
   }
 
@@ -2414,7 +2717,7 @@
     const planetStatus = chartKey === "d1" && kundali ? kundali.planetStatus : null;
     const charakarakas = chartKey === "d1" && kundali ? normalizeCharakarakas(kundali.jaimini) : {};
     return `
-      <section class="panel table-panel kundali-detail-table">
+      <section class="kundali-detail-card">
         <div class="panel-header">
           <h2>${t("horoscope.chartDetails")} - ${chartDisplayName(chartKey)}</h2>
         </div>
@@ -2670,7 +2973,7 @@
     chart = normalizeChartPayload(chart, chartKey);
     const kundali = state.horoscope.kundali;
     const planetStatus = chartKey === "d1" && kundali ? kundali.planetStatus : null;
-    const houses = buildNorthIndianHouses(chart, planetStatus);
+    const houses = buildNorthIndianHouses(chart, planetStatus, chartKey);
     const markers = chartKey === "jaimini" ? buildJaiminiMarkers(kundali?.jaimini) : [];
     const showPlanets = chartKey !== "jaimini";
     return `
@@ -2680,8 +2983,9 @@
     `;
   }
 
-  function buildNorthIndianHouses(chart, planetStatus) {
+  function buildNorthIndianHouses(chart, planetStatus, chartKey = "") {
     const lagnaSignIndex = Number(chart.lagna_sign_index || 1);
+    const gocharAscSignIndex = chartKey === "gochar" ? Number(chart.gochar_asc_sign_index || chart.gocharAscSignIndex || 0) || null : null;
     const isDerivedAscendantChart = Boolean(chart.derived_anchor);
     const placements = Object.values(chart.placements || {});
     const sourceHouses = Array.isArray(chart.houses) ? chart.houses : [];
@@ -2689,7 +2993,8 @@
       const houseNumber = index + 1;
       const signIndex = ((lagnaSignIndex + houseNumber - 2) % 12) + 1;
       const sourceHouse = sourceHouses.find((house) => Number(house.house) === houseNumber) || {};
-      const ascendantPlacement = !isDerivedAscendantChart && houseNumber === 1 ? ascendantDisplayData(placements, sourceHouse) : null;
+      const ascendantHouseNumber = gocharAscSignIndex ? houseFromLagnaSign(gocharAscSignIndex, lagnaSignIndex) : 1;
+      const ascendantPlacement = !isDerivedAscendantChart && houseNumber === ascendantHouseNumber ? ascendantDisplayData(placements, sourceHouse) : null;
       const bodies = chart.use_house_bodies
         ? bodiesFromHouse(sourceHouse, placements, planetStatus)
         : placements
@@ -2734,6 +3039,30 @@
       placements,
       houses: chart.houses || [],
     });
+  }
+
+  function natalLagnaSignIndex(kundali) {
+    const d1Chart = kundali?.charts?.d1;
+    if (!d1Chart) return null;
+    const normalizedD1 = normalizeChartPayload(d1Chart, "d1") || d1Chart;
+    return Number(normalizedD1?.lagna_sign_index || normalizedD1?.lagna_sign_index === 0 ? normalizedD1.lagna_sign_index : null) || null;
+  }
+
+  function prepareGocharChart(chart, kundali) {
+    if (!chart || chart.unavailable) return chart;
+    const natalLagna = natalLagnaSignIndex(kundali);
+    const normalized = normalizeChartPayload(chart, "gochar");
+    if (!normalized) return chart;
+    const gocharLagna = Number(normalized?.positions?.lagna?.sign_index || normalized?.positions?.ascendant?.sign_index || normalized?.positions?.asc?.sign_index || normalized?.lagna_sign_index || 0) || null;
+    if (gocharLagna) {
+      normalized.gochar_asc_sign_index = gocharLagna;
+      normalized.gochar_asc_sign = signNameByIndex(gocharLagna);
+    }
+    if (natalLagna) {
+      normalized.lagna_sign_index = natalLagna;
+      normalized.lagna_sign = signNameByIndex(natalLagna);
+    }
+    return normalized;
   }
 
   function normalizeJaiminiPayload(payload) {
@@ -2822,27 +3151,48 @@
     return String(value || "");
   }
 
-  function gocharControlsHtml(chart, chartKey, side) {
-    if (chartKey !== "gochar" || !side) return "";
-    const kundali = state.horoscope.kundali || {};
-    const steps = kundali.gocharSteps || {};
-    const selectedStep = steps[side] || "month";
-    return `
-      <div class="gochar-panel">
-        <div class="gochar-timestamp">${escapeHtml(formatGocharCalculatedAt(chart.calculated_at))}</div>
-        <div class="gochar-controls">
-          <button class="icon-button gochar-step-button" data-gochar-side="${escapeHtml(side)}" data-gochar-direction="backward" type="button" title="Backward" aria-label="Backward">
-            <img src="${ICONS.previous}" alt="" />
-          </button>
-          <select class="gochar-step-select" data-gochar-step-side="${escapeHtml(side)}" aria-label="Gochar interval">
-            ${gocharStepOptions(selectedStep)}
-          </select>
-          <button class="icon-button gochar-step-button" data-gochar-side="${escapeHtml(side)}" data-gochar-direction="forward" type="button" title="Forward" aria-label="Forward">
-            <img src="${ICONS.next}" alt="" />
-          </button>
-        </div>
-      </div>
-    `;
+  function chartTimingControlsHtml(chart, chartKey, side) {
+    return "";
+  }
+
+  function formatNativeBirthTimestamp(record) {
+    if (!record) return "";
+    const date = record.date || record.dob || record.birth_date || "";
+    const time = record.time || record.birth_time || "";
+    return [date, time].filter(Boolean).join(" ");
+  }
+
+  function nativeBirthIsoTimestamp(record) {
+    if (!record) return "";
+    const rawDate = record.date || record.dob || record.birth_date || "";
+    const rawTime = record.time || record.birth_time || "00:00:00";
+    const parsedDate = parseNativeDate(rawDate);
+    if (!parsedDate) return "";
+    const time = String(rawTime).slice(0, 8).padEnd(8, "0");
+    return `${parsedDate}T${time}`;
+  }
+
+  function parseNativeDate(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+    const match = text.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})$/);
+    if (!match) return "";
+    const month = {
+      jan: "01",
+      feb: "02",
+      mar: "03",
+      apr: "04",
+      may: "05",
+      jun: "06",
+      jul: "07",
+      aug: "08",
+      sep: "09",
+      oct: "10",
+      nov: "11",
+      dec: "12",
+    }[match[2].toLowerCase()];
+    return month ? `${match[3]}-${month}-${match[1].padStart(2, "0")}` : "";
   }
 
   function gocharStepOptions(selectedStep) {
@@ -2876,7 +3226,7 @@
     };
 
     return `
-      <svg class="north-diamond-chart" viewBox="0 0 100 100" role="img" aria-label="${t("horoscope.northIndian")}">
+      <svg class="north-diamond-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${t("horoscope.northIndian")}">
         <rect x="1" y="1" width="98" height="98" fill="#ffffff" stroke="#155b96" stroke-width="1.2"/>
         <polygon points="50,2 98,50 50,98 2,50" fill="#f7fbff" stroke="#155b96" stroke-width="1.1"/>
         <line x1="1" y1="1" x2="99" y2="99" stroke="#155b96" stroke-width="0.8"/>
@@ -3814,7 +4164,17 @@
     });
     app.querySelectorAll("[data-gochar-side]").forEach((button) => {
       button.addEventListener("click", () => {
-        changeGocharTime(button.dataset.gocharSide, button.dataset.gocharDirection);
+        changeGocharTime(button.dataset.gocharSide, button.dataset.gocharDirection, button.dataset.gocharChartKey, button.dataset.gocharStep);
+      });
+    });
+    app.querySelectorAll("[data-gochar-tile-side]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setGocharTileSide(button.dataset.gocharTileSide);
+      });
+    });
+    app.querySelectorAll("[data-kundali-right-panel]").forEach((button) => {
+      button.addEventListener("click", () => {
+        setKundaliRightPanel(button.dataset.kundaliRightPanel);
       });
     });
     app.querySelectorAll(".north-diamond-chart").forEach((chart) => {
@@ -3843,6 +4203,15 @@
     app.querySelectorAll("[data-shadbal-tab]").forEach((button) => {
       button.addEventListener("click", () => setShadbalTab(button.dataset.shadbalTab));
     });
+    app.querySelectorAll("[data-kundali-detail-panel]").forEach((button) => {
+      button.addEventListener("click", () => setKundaliDetailPanel(button.dataset.kundaliDetailPanel));
+    });
+    app.querySelectorAll("[data-kundali-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        closeChartPickers();
+        setKundaliChoice(button.dataset.kundaliChoice);
+      });
+    });
     app.querySelectorAll("[data-close-kundali-modal]").forEach((element) => {
       element.addEventListener("click", (event) => {
         if (event.target === element || element.tagName === "BUTTON") {
@@ -3853,6 +4222,9 @@
 
     app.querySelectorAll("[data-edit-jatak]").forEach((button) => {
       button.addEventListener("click", () => editHoroscope(button.dataset.editJatak));
+    });
+    app.querySelectorAll("[data-kp-jatak]").forEach((button) => {
+      button.addEventListener("click", () => viewKpPage(button.dataset.kpJatak));
     });
     app.querySelectorAll("[data-delete-jatak]").forEach((button) => {
       button.addEventListener("click", () => deleteHoroscope(button.dataset.deleteJatak));
@@ -4462,6 +4834,40 @@
     }
   }
 
+  async function viewKpPage(jatakId) {
+    if (!jatakId || jatakId === "null" || jatakId === "undefined") {
+      state.horoscope.error = t("common.error");
+      render();
+      return;
+    }
+    const horoscope = state.horoscope;
+    horoscope.error = "";
+    horoscope.message = "";
+    try {
+      const [record, d1, chalit] = await Promise.all([
+        getJson(`/jatak/${encodeURIComponent(jatakId)}`),
+        getJson(chartFetchPath(jatakId, "d1")),
+        getJson(chartFetchPath(jatakId, "chalit")),
+      ]);
+      horoscope.mode = "kp-view";
+      horoscope.kpView = {
+        jatakId,
+        title: "KP",
+        record,
+        leftChartKey: "d1",
+        rightChartKey: "chalit",
+        charts: {
+          d1,
+          chalit: normalizeChartPayload(chalit, "chalit"),
+        },
+      };
+      render();
+    } catch {
+      horoscope.error = t("common.error");
+      render();
+    }
+  }
+
   async function viewKundali(jatakId) {
     if (!jatakId || jatakId === "null" || jatakId === "undefined") {
       state.horoscope.error = t("common.error");
@@ -4485,13 +4891,19 @@
         chartType: "north",
         record,
         planetStatus: planetStatusResult,
+        detailPanelActive: "chart-details-d1",
+        rightPanelActive: "",
+        kundaliChoice: "panchanga",
         leftChartKey: "d1",
         rightChartKey: "d9",
         gocharSteps: { left: "month", right: "month" },
+        chalitTimes: {},
         sidePanel: { active: "", menuOpen: false, karakAkarak: {} },
         charts: { d1, d9 },
         jaimini: normalizeJaiminiPayload(jaiminiResult),
         houseDetails: null,
+        cuspDetails: null,
+        nakshatraNadi: null,
         error: "",
       };
       render();
@@ -4511,7 +4923,7 @@
     if (!kundali.charts) {
       kundali.charts = {};
     }
-    const cacheKey = normalizedChartKey === "gochar" ? gocharChartCacheKey(side) : normalizedChartKey;
+    const cacheKey = chartCacheKeyForSide(side, normalizedChartKey);
     if (!kundali.charts[cacheKey] || kundali.charts[cacheKey].unavailable) {
       try {
         if (derivedAscendantBody(normalizedChartKey)) {
@@ -4523,7 +4935,16 @@
           kundali.jaimini = normalizeJaiminiPayload(await getJson(chartFetchPath(kundali.jatakId, "jaimini")));
           kundali.charts[cacheKey] = kundali.charts.d1 || { unavailable: true };
         } else {
-          kundali.charts[cacheKey] = await getJson(chartFetchPath(kundali.jatakId, normalizedChartKey));
+          const fetchedChart = await getJson(chartFetchPath(kundali.jatakId, normalizedChartKey));
+          kundali.charts[cacheKey] = normalizedChartKey === "gochar"
+            ? prepareGocharChart(fetchedChart, kundali)
+            : normalizedChartKey === "chalit"
+              ? normalizeChartPayload(fetchedChart, "chalit")
+              : fetchedChart;
+          if (normalizedChartKey === "chalit") {
+            if (!kundali.chalitTimes) kundali.chalitTimes = {};
+            kundali.chalitTimes[side] = fetchedChart?.calculated_at || nativeBirthIsoTimestamp(kundali.record);
+          }
         }
       } catch {
         kundali.charts[cacheKey] = { unavailable: true };
@@ -4541,6 +4962,60 @@
     }
     kundali.sidePanel.menuOpen = !kundali.sidePanel.menuOpen;
     render();
+  }
+
+  async function setKundaliDetailPanel(panelKey) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.detailPanelActive = panelKey || "chart-details-d1";
+    render();
+  }
+
+  function setKundaliRightPanel(panelKey) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.rightPanelActive = panelKey || "";
+    render();
+  }
+
+  function setKundaliChoice(choice) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.kundaliChoice = choice === "kp-astrology" ? "kp-astrology" : "panchanga";
+    if (kundali.kundaliChoice === "kp-astrology") {
+      kundali.rightPanelActive = "";
+      render();
+      loadKundaliNakshatraNadi(false);
+      return;
+    }
+    render();
+  }
+
+  async function applyKundaliKpChartPair() {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.leftChartKey = "d1";
+    kundali.rightChartKey = "chalit";
+    if (!kundali.charts) {
+      kundali.charts = {};
+    }
+    try {
+      if (!kundali.charts.d1 || kundali.charts.d1.unavailable) {
+        kundali.charts.d1 = await getJson(chartFetchPath(kundali.jatakId, "d1"));
+      }
+      const chalitKey = chartCacheKeyForSide("right", "chalit");
+      if (!kundali.charts[chalitKey] || kundali.charts[chalitKey].unavailable) {
+        const chalit = await getJson(chartFetchPath(kundali.jatakId, "chalit"));
+        kundali.charts[chalitKey] = normalizeChartPayload(chalit, "chalit");
+        if (!kundali.chalitTimes) kundali.chalitTimes = {};
+        kundali.chalitTimes.right = chalit?.calculated_at || nativeBirthIsoTimestamp(kundali.record);
+      }
+      kundali.error = "";
+    } catch {
+      kundali.error = t("horoscope.chartLoadError");
+    } finally {
+      render();
+    }
   }
 
   function openKundaliTool(panelKey) {
@@ -4732,6 +5207,80 @@
 
   async function loadDigbalAnalysis() {
     await ensureShadbalAnalysis();
+  }
+
+  async function loadKundaliCuspDetails(forceReload = false) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    if (!kundali.cuspDetails) {
+      kundali.cuspDetails = {};
+    }
+    if (!forceReload && (kundali.cuspDetails.isLoading || kundali.cuspDetails.rows)) {
+      return;
+    }
+
+    kundali.cuspDetails = { isLoading: true, error: "", rows: [], columns: [] };
+    render();
+
+    try {
+      const payload = await getJson(kundaliCuspApiPath(kundali));
+      const normalized = normalizeCuspDetails(payload);
+      if (!state.horoscope.kundali) return;
+      state.horoscope.kundali.cuspDetails = {
+        isLoading: false,
+        error: "",
+        rows: normalized.rows,
+        columns: normalized.columns,
+      };
+    } catch (errorResponse) {
+      if (!state.horoscope.kundali) return;
+      state.horoscope.kundali.cuspDetails = {
+        isLoading: false,
+        error: errorMessage(errorResponse, "Unable to load cusp details."),
+        rows: [],
+        columns: [],
+      };
+    } finally {
+      render();
+    }
+  }
+
+  function kundaliCuspApiPath(kundali) {
+    return `/jatak/${encodeURIComponent(kundali.jatakId)}/kp/cusps`;
+  }
+
+  async function loadKundaliNakshatraNadi(forceReload = false) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    if (!kundali.nakshatraNadi) {
+      kundali.nakshatraNadi = {};
+    }
+    if (!forceReload && (kundali.nakshatraNadi.isLoading || kundali.nakshatraNadi.rows)) {
+      return;
+    }
+
+    kundali.nakshatraNadi = { isLoading: true, error: "", rows: [] };
+    render();
+
+    try {
+      const payload = await getJson(`/jatak/${encodeURIComponent(kundali.jatakId)}/kp/nakshatra-nadi`);
+      const rows = normalizeNakshatraNadiDetails(payload);
+      if (!state.horoscope.kundali) return;
+      state.horoscope.kundali.nakshatraNadi = {
+        isLoading: false,
+        error: "",
+        rows,
+      };
+    } catch (errorResponse) {
+      if (!state.horoscope.kundali) return;
+      state.horoscope.kundali.nakshatraNadi = {
+        isLoading: false,
+        error: errorMessage(errorResponse, "Unable to load Yogini Dasha details."),
+        rows: [],
+      };
+    } finally {
+      render();
+    }
   }
 
   async function loadDrigbalAnalysis() {
@@ -4976,6 +5525,99 @@
       house_digbala: row?.house_digbala ?? row?.houseDigbala,
       house_drigbala: row?.house_drigbala ?? row?.houseDrigbala,
     })).filter((row) => row.planet);
+  }
+
+  function normalizeCuspDetails(payload) {
+    const sourceRows = Array.isArray(payload?.cusps)
+      ? payload.cusps
+      : Array.isArray(payload?.data?.cusps)
+        ? payload.data.cusps
+        : Array.isArray(payload?.result?.cusps)
+          ? payload.result.cusps
+          : Array.isArray(payload?.rows)
+            ? payload.rows
+            : [];
+
+    const normalizedRows = sourceRows.map((row, index) => ({
+      house_number: row?.house_number ?? row?.houseNumber ?? index + 1,
+      cusp_longitude: row?.cusp_longitude ?? row?.cuspLongitude ?? row?.longitude ?? "-",
+      sign: row?.sign ?? "-",
+      sign_index: row?.sign_index ?? row?.signIndex ?? "-",
+      degree_in_sign: row?.degree_in_sign ?? row?.degreeInSign ?? "-",
+      nakshatra: row?.nakshatra ?? "-",
+      nakshatra_index: row?.nakshatra_index ?? row?.nakshatraIndex ?? "-",
+      rashi_swami: row?.rashi_swami ?? row?.rashiSwami ?? "-",
+      nakshatra_swami: row?.nakshatra_swami ?? row?.nakshatraSwami ?? "-",
+      sub_lord: row?.sub_lord ?? row?.subLord ?? "-",
+      sub_sub_lord: row?.sub_sub_lord ?? row?.subSubLord ?? "-",
+    }));
+
+    const columns = [
+      "house_number",
+      "cusp_longitude",
+      "sign",
+      "degree_in_sign",
+      "nakshatra",
+      "rashi_swami",
+      "nakshatra_swami",
+      "sub_lord",
+    ];
+    return { rows: normalizedRows, columns };
+  }
+
+  function normalizeNakshatraNadiDetails(payload) {
+    const planets = payload?.planets || payload?.data?.planets || payload?.result?.planets || {};
+    return Object.entries(planets).map(([planetKey, row]) => ({
+      planet_key: row?.planet_key || planetKey,
+      current_planet: normalizeNakshatraNadiReference(row?.current_planet),
+      nakshatra_lord: normalizeNakshatraNadiReference(row?.nakshatra_lord),
+      sub_lord: normalizeNakshatraNadiReference(row?.sub_lord),
+    }));
+  }
+
+  function normalizeNakshatraNadiReference(value) {
+    return {
+      planet_key: value?.planet_key ?? value?.planetKey ?? "-",
+      value: Array.isArray(value?.value) ? value.value : [],
+    };
+  }
+
+  function formatCuspLabel(value) {
+    return String(value || "")
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (ch) => ch.toUpperCase());
+  }
+
+  function formatCuspValue(value) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "number") {
+      return Number.isInteger(value) ? String(value) : value.toFixed(6).replace(/\.?0+$/, "");
+    }
+    return String(value);
+  }
+
+  function formatCuspLongitude(value) {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return "-";
+    const wholeDegrees = Math.floor(number);
+    const minutesFloat = (number - wholeDegrees) * 60;
+    const wholeMinutes = Math.floor(minutesFloat);
+    const seconds = Math.round((minutesFloat - wholeMinutes) * 60);
+    const normalizedMinutes = wholeMinutes + Math.floor(seconds / 60);
+    const normalizedSeconds = seconds % 60;
+    const normalizedDegrees = wholeDegrees + Math.floor(normalizedMinutes / 60);
+    const displayMinutes = String(normalizedMinutes % 60).padStart(2, "0");
+    const displaySeconds = String(normalizedSeconds).padStart(2, "0");
+    return `${normalizedDegrees}° ${displayMinutes}' ${displaySeconds}"`;
+  }
+
+  function formatNakshatraNadiValue(value) {
+    if (!Array.isArray(value) || !value.length) return "";
+    return [...value]
+      .map((item) => Number(item))
+      .filter((item) => Number.isFinite(item))
+      .sort((first, second) => first - second)
+      .join(", ");
   }
 
   function normalizeDigbalRows(payload) {
@@ -5362,23 +6004,30 @@
     render();
   }
 
-  async function changeGocharTime(side, direction) {
+  function setGocharTileSide(side) {
+    const kundali = state.horoscope.kundali;
+    if (!kundali) return;
+    kundali.gocharTileSide = side === "right" ? "right" : "left";
+    render();
+  }
+
+  async function changeGocharTime(side, direction, explicitChartKey = "", explicitStep = "") {
     const kundali = state.horoscope.kundali;
     if (!kundali || !side) return;
-    const chartKey = side === "right" ? kundali.rightChartKey : kundali.leftChartKey;
-    if (chartKey !== "gochar") return;
+    const chartKey = explicitChartKey || (side === "right" ? kundali.rightChartKey : kundali.leftChartKey);
 
-    const chart = normalizeChartPayload(activeChartForSide(kundali, side), "gochar");
-    const baseValue = chart && chart.calculated_at ? chart.calculated_at : "";
-    const targetAt = addGocharStep(baseValue, selectedGocharStep(side), direction === "backward" ? -1 : 1);
-    const targetKey = gocharChartCacheKey(side);
+    const chart = normalizeChartPayload(activeChartForSide(kundali, side), chartKey);
+    const baseValue = chart?.calculated_at || nativeBirthIsoTimestamp(kundali.record) || "";
+    const targetAt = addGocharStep(baseValue, explicitStep || selectedGocharStep(side), direction === "backward" ? -1 : 1);
+    const targetKey = chartCacheKeyForSide(side, chartKey);
 
     kundali.error = "";
     if (!kundali.charts) {
       kundali.charts = {};
     }
     try {
-      kundali.charts[targetKey] = await getJson(`${chartFetchPath(kundali.jatakId, "gochar")}?at=${encodeURIComponent(targetAt)}`);
+      const fetchedChart = await getJson(`${chartFetchPath(kundali.jatakId, chartKey)}?at=${encodeURIComponent(targetAt)}`);
+      kundali.charts[targetKey] = chartKey === "gochar" ? prepareGocharChart(fetchedChart, kundali) : chartKey === "chalit" ? normalizeChartPayload(fetchedChart, "chalit") : fetchedChart;
     } catch {
       kundali.error = t("horoscope.chartLoadError");
     }
@@ -5387,8 +6036,15 @@
 
   function activeChartForSide(kundali, side) {
     const chartKey = side === "right" ? kundali.rightChartKey : kundali.leftChartKey;
-    const cacheKey = chartKey === "gochar" ? gocharChartCacheKey(side) : chartKey;
-    return kundali.charts && kundali.charts[cacheKey];
+    const cacheKey = chartCacheKeyForSide(side, chartKey);
+    const chart = kundali.charts && kundali.charts[cacheKey];
+    return chartKey === "gochar" ? prepareGocharChart(chart, kundali) : chart;
+  }
+
+  function chartCacheKeyForSide(side, chartKey) {
+    if (chartKey === "gochar") return gocharChartCacheKey(side);
+    if (chartKey === "chalit") return `chalit_${side || "left"}`;
+    return chartKey;
   }
 
   function selectedGocharStep(side) {
@@ -5402,6 +6058,7 @@
     const target = Number.isNaN(date.getTime()) ? new Date() : date;
     const amount = direction < 0 ? -1 : 1;
     const config = gocharStepConfig(step) || gocharStepConfig("month");
+    if (config.unit === "minute") target.setMinutes(target.getMinutes() + amount * config.value);
     if (config.unit === "hour") target.setHours(target.getHours() + amount * config.value);
     if (config.unit === "day") target.setDate(target.getDate() + amount * config.value);
     if (config.unit === "week") target.setDate(target.getDate() + amount * config.value * 7);
@@ -5417,6 +6074,8 @@
       day: { unit: "day", value: 1 },
       month: { unit: "month", value: 1 },
       year: { unit: "year", value: 1 },
+      "10min": { unit: "minute", value: 10 },
+      "1min": { unit: "minute", value: 1 },
       "5year": { unit: "year", value: 5 },
     };
     return map[step] || null;

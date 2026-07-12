@@ -1702,7 +1702,7 @@ a {
 
 .kundali-panel {
   position: relative;
-  overflow: hidden;
+  overflow: visible;
   min-height: 0;
   padding: 10px 12px;
 }
@@ -2071,26 +2071,245 @@ a {
   pointer-events: none;
 }
 
+.kundali-chart-layout {
+  display: grid;
+  grid-template-columns: max-content minmax(220px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.kundali-right-panel {
+  display: grid;
+  gap: 10px;
+  align-content: start;
+  justify-items: stretch;
+}
+
+.kundali-right-control-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.kundali-right-separator {
+  height: 1px;
+  background: #dce8f3;
+}
+
+.kundali-choice-picker {
+  width: 175px;
+  max-width: 175px;
+  justify-self: end;
+}
+
+.kundali-choice-button {
+  width: 175px;
+  max-width: 175px;
+  min-height: 19px;
+  padding: 3px 14px 3px 5px;
+  gap: 0;
+}
+
+.kundali-choice-button::after {
+  top: 9px;
+  right: 6px;
+  width: 6px;
+  height: 6px;
+}
+
+.kundali-choice-button span {
+  overflow: hidden;
+  font-size: 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-choice-button small {
+  display: block;
+  overflow: hidden;
+  font-size: 7px;
+  line-height: 1;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-choice-menu {
+  width: 180px;
+  right: 0;
+  left: auto;
+}
+
+.kundali-right-tabs {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-self: start;
+  min-height: 28px;
+  padding-top: 0;
+}
+
+.kundali-right-tab {
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 6px 10px;
+  color: var(--blue-700);
+  background: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.kundali-right-tab.active {
+  border-color: rgba(21, 91, 150, 0.3);
+  color: #ffffff;
+  background: linear-gradient(180deg, #155b96, #0f4b7b);
+  box-shadow: 0 6px 16px rgba(15, 75, 123, 0.18);
+}
+
+.kundali-right-panel-body {
+  overflow: visible;
+  padding-right: 0;
+}
+
+.kundali-right-panel-body .cusp-table-wrap {
+  max-height: none;
+  overflow: visible;
+}
+
+.kundali-right-panel-body .cusp-detail-table {
+  table-layout: fixed;
+}
+
+.kundali-right-panel-body .cusp-detail-table th,
+.kundali-right-panel-body .cusp-detail-table td {
+  padding: 3px 4px;
+  font-size: 8px;
+  line-height: 1.1;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.kundali-right-panel-body .cusp-detail-table th {
+  color: var(--blue-700);
+  background: #f7fbff;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 100px);
+  gap: 6px;
+  align-items: start;
+  justify-content: start;
+  overflow: visible;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-tile {
+  box-sizing: border-box;
+  width: 100px;
+  height: 72px;
+  padding: 5px;
+  border-color: #cfe0ee;
+  border-left: 3px solid #155f9d;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 211, 105, 0.35), transparent 34%),
+    linear-gradient(145deg, #fffdf2 0%, #f3f9ff 100%);
+  box-shadow: 0 8px 18px rgba(21, 91, 150, 0.12);
+  overflow: hidden;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row {
+  display: grid;
+  grid-template-columns: 30px 1fr;
+  gap: 1px 3px;
+  align-items: center;
+  min-height: 18px;
+  padding: 1px 0;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row span {
+  color: var(--muted);
+  font-size: 6px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row strong {
+  color: var(--text);
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-green {
+  color: #087a39;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-yellow {
+  color: #9a6a00;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-red {
+  color: #8b0000;
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row strong.nadi-planet-default {
+  color: var(--text);
+}
+
+.kundali-right-panel-body .nakshatra-nadi-row code {
+  grid-column: 1 / -1;
+  color: #0f4b7b;
+  font-size: 7px;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-empty-state {
+  padding: 14px;
+  font-size: 11px;
+}
+
 .kundali-grid {
   position: relative;
   z-index: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  width: 90%;
-  margin: 0 auto;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.86);
+  grid-template-columns: repeat(2, 324px);
+  gap: 10px;
+  width: max-content;
+  max-width: 100%;
+  margin: 0;
+  border: 0;
+  border-radius: 0;
+  overflow: visible;
+  background: transparent;
+}
+
+.kundali-chart-cluster {
+  display: flex;
+  gap: 8px;
+  align-items: start;
+}
+
+.kundali-info-tile-stack {
+  display: grid;
+  gap: 6px;
+  width: 100px;
 }
 
 .kundali-cell {
   display: grid;
   place-items: center;
-  min-height: 112px;
-  padding: 10px;
-  border-right: 1px solid var(--border);
-  border-bottom: 1px solid var(--border);
+  min-height: 0;
+  padding: 0;
+  border: 0;
   color: var(--text);
   font-size: 22px;
   font-weight: 800;
@@ -2110,37 +2329,164 @@ a {
 }
 
 .kundali-heading {
-  min-height: 12px;
-  padding: 4px 10px;
+  min-height: 0;
+  padding: 0;
   color: var(--blue-700);
-  background: #f7fbff;
+  background: transparent;
+}
+
+.kundali-heading .chart-picker,
+.kundali-heading .chart-picker-button {
+  box-sizing: border-box;
+  width: 324px;
+  max-width: 324px;
 }
 
 .kundali-native-details {
   display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  width: 95%;
-  margin-inline: auto;
-  gap: 8px;
-  padding: 10px 12px;
+  align-content: start;
+  gap: 4px;
+  box-sizing: border-box;
+  width: 100px;
+  height: 72px;
+  margin: 0;
+  padding: 7px 6px;
+  border: 1px solid #c9dfef;
+  border-left: 3px solid #155f9d;
+  border-radius: 10px;
+  color: #123a59;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 211, 105, 0.45), transparent 34%),
+    linear-gradient(145deg, #fffdf2 0%, #f3f9ff 100%);
+  box-shadow: 0 8px 18px rgba(21, 91, 150, 0.14);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow: hidden;
 }
 
-.kundali-native-details div {
+.kundali-native-details span {
+  display: block;
+  min-width: 0;
+  padding: 1px 3px;
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(21, 91, 150, 0.06);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-gochar-tile {
+  display: grid;
+  align-content: start;
+  gap: 7px;
+  box-sizing: border-box;
+  width: 100px;
+  min-height: 0;
+  height: 224px;
+  padding: 7px 6px;
+  border: 1px solid #cfe2d6;
+  border-left: 3px solid #20825b;
+  border-radius: 10px;
+  background:
+    radial-gradient(circle at 82% 10%, rgba(94, 205, 151, 0.34), transparent 34%),
+    linear-gradient(145deg, #f6fff8 0%, #f3f9ff 100%);
+  box-shadow: 0 8px 18px rgba(32, 130, 91, 0.13);
+  overflow: hidden;
+}
+
+.kundali-side-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(18, 58, 89, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(32, 130, 91, 0.08);
+}
+
+.kundali-side-toggle button {
+  min-height: 18px;
+  border: 0;
+  border-radius: 999px;
+  color: #31536b;
+  background: transparent;
+  font-size: 7px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.kundali-side-toggle button.active {
+  color: #ffffff;
+  background: linear-gradient(135deg, #176f4e, #1b75a5);
+  box-shadow: 0 3px 8px rgba(27, 117, 165, 0.22);
+}
+
+.kundali-gochar-tile .gochar-timestamp {
+  display: grid;
+  gap: 2px;
+  max-width: 100%;
+  padding: 5px 3px;
+  border-radius: 5px;
+  color: #123a59;
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: inset 0 0 0 1px rgba(32, 130, 91, 0.07);
+  font-size: 8px;
+  font-weight: 800;
+  line-height: 1.15;
+  overflow: hidden;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-gochar-tile .gochar-timestamp strong {
+  color: #176f4e;
+  font-size: 9px;
+}
+
+.kundali-time-step-list {
   display: grid;
   gap: 4px;
 }
 
-.kundali-native-details span {
-  color: var(--muted);
-  font-size: 10px;
-  font-weight: 800;
-  text-transform: uppercase;
+.kundali-time-step-row {
+  display: grid;
+  grid-template-columns: 18px 1fr 18px;
+  align-items: center;
+  gap: 2px;
+  min-height: 20px;
 }
 
-.kundali-native-details strong {
-  color: var(--text);
-  font-size: 12px;
+.kundali-time-step-row button {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #1b75a5;
+  box-shadow: 0 2px 5px rgba(27, 117, 165, 0.22);
+  font-size: 10px;
   font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.kundali-time-step-row button:first-child {
+  background: #9f382d;
+}
+
+.kundali-time-step-row span {
+  padding: 2px 3px;
+  border-radius: 5px;
+  color: #123a59;
+  background: rgba(255, 255, 255, 0.7);
+  box-shadow: inset 0 0 0 1px rgba(32, 130, 91, 0.06);
+  font-size: 7px;
+  font-weight: 900;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .chart-picker {
@@ -2190,19 +2536,18 @@ a {
 }
 
 .chart-picker-menu {
-  position: fixed;
+  position: absolute;
   z-index: 20;
-  top: 12vh;
-  left: 50%;
+  top: calc(100% + 4px);
+  left: 0;
   display: none;
-  width: min(640px, calc(100vw - 48px));
-  max-height: 76vh;
+  width: 100%;
+  max-height: min(360px, 70vh);
   overflow: auto;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: #ffffff;
-  box-shadow: 0 24px 80px rgba(21, 91, 150, 0.28);
-  transform: translateX(-50%);
+  box-shadow: 0 14px 34px rgba(21, 91, 150, 0.2);
 }
 
 .chart-picker.open .chart-picker-menu {
@@ -2211,11 +2556,11 @@ a {
 
 .chart-picker-option {
   display: grid;
-  gap: 8px;
+  gap: 4px;
   width: 100%;
   border: 0;
   border-bottom: 1px solid var(--border);
-  padding: 16px;
+  padding: 10px 12px;
   text-align: left;
   background: #ffffff;
   cursor: pointer;
@@ -2227,13 +2572,13 @@ a {
 
 .chart-picker-option strong {
   color: #111827;
-  font-size: 20px;
+  font-size: 13px;
   font-weight: 900;
 }
 
 .chart-picker-option span {
   color: #6b7280;
-  font-size: 16px;
+  font-size: 11px;
   font-weight: 700;
 }
 
@@ -2250,6 +2595,322 @@ a {
 .kundali-detail-table {
   margin-top: 0;
   padding: 12px;
+}
+
+.kundali-detail-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kundali-detail-tool {
+  appearance: none;
+  border: 1px solid transparent;
+  background: #f8fbff;
+  padding: 7px 14px;
+  width: auto;
+  min-height: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.kundali-detail-tool:hover,
+.kundali-detail-tool:focus {
+  transform: translateY(-1px);
+}
+
+.kundali-detail-tool.active {
+  opacity: 1;
+  border-color: rgba(21, 91, 150, 0.3);
+  background: linear-gradient(180deg, #155b96, #0f4b7b);
+  box-shadow: 0 6px 16px rgba(15, 75, 123, 0.22);
+}
+
+.kundali-detail-tool:not(.active) {
+  opacity: 0.72;
+}
+
+.kundali-detail-tool-label {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.kundali-detail-tool.active .kundali-detail-tool-label {
+  color: #ffffff;
+}
+
+.kundali-detail-body {
+  min-height: 120px;
+}
+
+.kp-detail-placeholder .kundali-detail-body {
+  min-height: 180px;
+  padding-bottom: 90px;
+  overflow: visible;
+}
+
+.kundali-detail-table .nakshatra-nadi-grid {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(138px, 1fr));
+  gap: 8px;
+  align-items: start;
+  justify-content: stretch;
+  overflow: visible;
+}
+
+.kundali-detail-table .nakshatra-nadi-tile {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 42px;
+  gap: 7px;
+  align-items: center;
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 90px;
+  padding: 8px 8px 8px 9px;
+  border: 1px solid #cfe0ee;
+  border-left: 5px solid #155f9d;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 18% 12%, rgba(255, 211, 105, 0.35), transparent 34%),
+    linear-gradient(145deg, #fffdf2 0%, #f3f9ff 100%);
+  box-shadow: 0 8px 18px rgba(21, 91, 150, 0.12);
+  overflow: visible;
+}
+
+.kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:hover,
+.kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:focus-within {
+  z-index: 20;
+}
+
+.kundali-detail-table .nakshatra-nadi-content {
+  min-width: 0;
+}
+
+.kundali-detail-table .nakshatra-nadi-row {
+  display: grid;
+  grid-template-columns: max-content max-content 1fr;
+  gap: 3px;
+  align-items: center;
+  min-height: 23px;
+  padding: 2px 0;
+  border-top: 0;
+}
+
+.kundali-detail-table .nakshatra-nadi-row span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.kundali-detail-table .nakshatra-nadi-row strong {
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 900;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.kundali-detail-table .nakshatra-nadi-row code {
+  color: #0f4b7b;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-detail-table .nakshatra-nadi-planet-image {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid rgba(21, 91, 150, 0.16);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.45), 0 5px 12px rgba(21, 91, 150, 0.12);
+  overflow: hidden;
+}
+
+.kundali-detail-table .nakshatra-nadi-planet-image img {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid rgba(199, 58, 128, 0.28);
+  border-radius: 14px;
+  color: #5b163d;
+  background:
+    radial-gradient(circle at 12% 10%, rgba(255, 184, 218, 0.52), transparent 36%),
+    linear-gradient(145deg, rgba(255, 247, 252, 0.98), rgba(255, 225, 241, 0.98));
+  box-shadow: 0 16px 34px rgba(199, 58, 128, 0.22);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transition: opacity 0.16s ease, transform 0.16s ease;
+}
+
+.kundali-detail-table .nakshatra-nadi-tile.tooltip-down .nakshatra-nadi-tooltip {
+  top: calc(100% + 8px);
+  transform: translateY(-6px) scale(0.98);
+}
+
+.kundali-detail-table .nakshatra-nadi-tile.tooltip-up .nakshatra-nadi-tooltip {
+  bottom: calc(100% + 8px);
+  transform: translateY(6px) scale(0.98);
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip::after {
+  position: absolute;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  content: "";
+  background: rgba(255, 225, 241, 0.98);
+  border-top: 1px solid rgba(199, 58, 128, 0.18);
+  border-left: 1px solid rgba(199, 58, 128, 0.18);
+  transform: rotate(45deg);
+}
+
+.kundali-detail-table .nakshatra-nadi-tile.tooltip-down .nakshatra-nadi-tooltip::after {
+  top: -6px;
+}
+
+.kundali-detail-table .nakshatra-nadi-tile.tooltip-up .nakshatra-nadi-tooltip::after {
+  bottom: -6px;
+  border: 0;
+  border-right: 1px solid rgba(199, 58, 128, 0.18);
+  border-bottom: 1px solid rgba(199, 58, 128, 0.18);
+}
+
+.kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:hover .nakshatra-nadi-tooltip,
+.kundali-detail-table.tooltips-enabled .nakshatra-nadi-tile:focus-within .nakshatra-nadi-tooltip {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip-row {
+  display: grid;
+  grid-template-columns: 62px 1fr;
+  gap: 2px 8px;
+  align-items: baseline;
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip-row span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip-row strong {
+  color: #b51f73;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.kundali-detail-table .nakshatra-nadi-tooltip-row code {
+  grid-column: 2;
+  color: #5b163d;
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.2;
+  white-space: normal;
+}
+
+.cusp-table-wrap {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.cusp-detail-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.cusp-detail-table th,
+.cusp-detail-table td {
+  padding: 4px 6px;
+  font-size: 10px;
+  line-height: 1.15;
+}
+
+.cusp-detail-table tbody tr + tr td {
+  border-top: 1px solid #edf2f7;
+}
+
+.nakshatra-nadi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.nakshatra-nadi-tile {
+  border: 1px solid #dce8f3;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
+  box-shadow: 0 6px 18px rgba(25, 62, 95, 0.08);
+}
+
+.nakshatra-nadi-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 8px;
+  align-items: center;
+  padding: 7px 0;
+  border-top: 1px solid #edf2f7;
+}
+
+.nakshatra-nadi-row span {
+  color: var(--muted);
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.nakshatra-nadi-row strong {
+  color: var(--text);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: capitalize;
+}
+
+.nakshatra-nadi-row code {
+  grid-column: 1 / -1;
+  color: #0f4b7b;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.kundali-detail-card {
+  border: 1px solid #e5edf5;
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 10px;
 }
 
 .kundali-detail-table .panel-header {
@@ -2277,6 +2938,67 @@ a {
 .kundali-detail-table .data-table td {
   padding: 7px 9px;
   font-size: 12px;
+}
+
+.kp-view-grid {
+  margin: 0;
+  padding: 0;
+  max-width: 100%;
+  width: 100%;
+}
+
+.kp-view-grid-inner {
+  display: grid;
+  grid-template-columns: max-content max-content;
+  gap: 10px;
+  align-items: start;
+  justify-content: start;
+}
+
+.kp-view-grid .chart-cell {
+  width: fit-content;
+  margin: 0;
+  justify-self: start;
+}
+
+.kp-chart-title {
+  width: 350px;
+  margin-bottom: 4px;
+  color: var(--blue-700);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.kp-view-grid .north-chart {
+  width: 350px;
+}
+
+.kp-view-grid .north-chart svg {
+  display: block;
+  width: 350px;
+  max-width: 350px;
+  height: 250px;
+  margin: 0;
+}
+
+.kp-view-grid .chart-timing-controls {
+  width: 350px;
+  max-width: 350px;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .kp-view-grid-inner {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .kundali-detail-tool {
+    width: auto;
+    min-height: 0;
+  }
 }
 
 .chart-type-select {
@@ -2345,6 +3067,12 @@ a {
   height: 30px;
 }
 
+.gochar-step-select:disabled,
+.gochar-step-button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
 .gochar-step-button img {
   width: 14px;
   height: 14px;
@@ -2356,6 +3084,20 @@ a {
   margin: 0 auto;
   aspect-ratio: 1;
   display: block;
+}
+
+.kundali-panel:not(.kp-view-grid) .north-chart {
+  box-sizing: border-box;
+  width: 324px;
+  margin: 0 auto;
+}
+
+.kundali-panel:not(.kp-view-grid) .north-diamond-chart {
+  box-sizing: border-box;
+  width: 324px;
+  max-width: 324px;
+  height: 240px;
+  margin: 0;
 }
 
 .north-diamond-chart .house-sign {
@@ -2542,11 +3284,14 @@ a {
     text-align: left;
   }
 
+  .kundali-chart-layout {
+    grid-template-columns: 1fr;
+  }
+
   .stats-grid,
   .action-grid,
   .location-form-grid,
-  .horoscope-form-grid,
-  .kundali-native-details {
+  .horoscope-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
