@@ -1029,7 +1029,7 @@
             )
             .join("")}
         </div>
-        ${dashaTableHtml()}
+        ${dashaTableHtml(planetGroups)}
       </div>
     `;
   }
@@ -1058,7 +1058,11 @@
     return order
       .map((key) => planets[key])
       .filter(Boolean)
-      .map((planet) => ["current_planet", "nakshatra_lord", "sub_lord"].map((field) => nakshatraNaadiRow(planet[field])).filter(Boolean))
+      .map((planet) => {
+        const rows = ["current_planet", "nakshatra_lord", "sub_lord"].map((field) => nakshatraNaadiRow(planet[field])).filter(Boolean);
+        rows.planetKey = planet.planet_key;
+        return rows;
+      })
       .filter((group) => group.length);
   }
 
@@ -1106,11 +1110,51 @@
     return "naadi-number-default";
   }
 
+  function naadiSignificatorMessageHtml(planetGroups) {
+    const rule = selectedNaadiRule();
+    const child = state.naadiRules.childChoice || "";
+    const significator = rule.significator ? localizedPlanetFullName(rule.significator) : "-";
+    const positives = scoredNaadiPlanets(planetGroups, rule)
+      .filter((item) => item.score > 0)
+      .map((item) => `${localizedPlanetFullName(item.planet)} (${item.score})`);
+    return `
+      <div class="naadi-significator-message">
+        <div class="naadi-message-title">${escapeHtml(child)}</div>
+        <div class="naadi-message-row">
+          <span>Significator Planet</span>
+          <strong>${escapeHtml(significator)}</strong>
+        </div>
+        <div class="naadi-message-row">
+          <span>Positive Planets</span>
+          <strong>${escapeHtml(positives.length ? positives.join(", ") : "-")}</strong>
+        </div>
+      </div>
+    `;
+  }
+
+  function scoredNaadiPlanets(planetGroups, rule) {
+    const green = new Set((rule.green || []).map(Number));
+    const red = new Set((rule.red || []).map(Number));
+    return planetGroups.map((group) => ({
+      planet: group.planetKey || group[0]?.planet || "",
+      score: group.reduce((total, row, index) => total + scoreNaadiRow(row.values, index + 1, green, red), 0),
+    }));
+  }
+
+  function scoreNaadiRow(values, rowNumber, green, red) {
+    return (values || []).reduce((total, value) => {
+      const number = Number(value);
+      if (green.has(number)) return total + rowNumber;
+      if (red.has(number)) return total - rowNumber;
+      return total;
+    }, 0);
+  }
+
   function selectedNaadiRule() {
     return state.naadiRules.data?.[state.naadiRules.rootChoice]?.[state.naadiRules.childChoice] || {};
   }
 
-  function dashaTableHtml() {
+  function dashaTableHtml(planetGroups = []) {
     const dasha = state.jatakView.dasha || defaultDashaState();
     if (dasha.loading) {
       return `<div class="dasha-panel"><div class="chart-state">${t("dasha.loading")}</div></div>`;
@@ -1149,16 +1193,17 @@
             </table>
           </div>
         </div>
-        ${dashaTimingControlsHtml()}
+        ${dashaTimingControlsHtml(planetGroups)}
       </div>
     `;
   }
 
-  function dashaTimingControlsHtml() {
+  function dashaTimingControlsHtml(planetGroups = []) {
     const options = ["5 Years", "Year", "Month", "Day", "Hour", "10 Min", "Minute"];
     const selectedStep = state.jatakView.dasha?.step || "Hour";
     return `
       <div class="dasha-timing-panel">
+        ${naadiSignificatorMessageHtml(planetGroups)}
         ${activeDashaNamesHtml()}
         <div class="dasha-working-date"><span>${t("dasha.workingDate")}</span><strong>${escapeHtml(formatDateTime(dashaWorkingDate().toISOString()))}</strong></div>
         <div class="dasha-time-options">

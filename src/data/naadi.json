@@ -2,17 +2,20 @@
     "Marriage":{
         "Normal Marriage":{
             "green":[2,7,11],
-            "red":[1,6,10]
+            "red":[1,6,10],
+            "significator":"venus"
         },
         "Love Marriage":{
             "green":[2,5,7,11],
-            "red":[1,4,6,10]
+            "red":[1,4,6,10],
+            "significator":"venus"
         }
     },
     "Education":{
        "Primary Education":{
             "green":[1,4],
-            "red":[12,3]
+            "red":[12,3],
+            "significator":"mercury"
         }
     }
 }
