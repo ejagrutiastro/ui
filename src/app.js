@@ -4,6 +4,7 @@
   const state = {
     language: localStorage.getItem("ej_vedic_language") || "en",
     headingChoice: "home",
+    naadiView: "cusp",
     settings: {
       chart_type: "north",
       jatak_id: null,
@@ -29,6 +30,15 @@
       d1: null,
       d9: null,
       positions: null,
+      cusps: null,
+      cuspsLoading: false,
+      cuspsError: "",
+      cuspsErrorKey: "",
+      nakshatraNaadi: null,
+      nakshatraNaadiLoading: false,
+      nakshatraNaadiError: "",
+      nakshatraNaadiErrorKey: "",
+      dasha: defaultDashaState(),
       loading: false,
       error: "",
       errorKey: "",
@@ -41,6 +51,11 @@
       gochar: null,
       d1: null,
       d9: null,
+    },
+    naadiRules: {
+      data: {},
+      rootChoice: "",
+      childChoice: "",
     },
     kundaliForm: {
       open: false,
@@ -83,6 +98,8 @@
     state.messages.en = await loadIni("./src/locales/en.ini");
     state.messages.mr = await loadIni("./src/locales/mr.ini");
     state.settings = { ...state.settings, ...(await loadSettings()) };
+    state.naadiRules.data = await loadNaadiRules();
+    initializeNaadiRuleChoices();
     render();
     loadHomeGocharChart();
     loadHomePanchang();
@@ -96,7 +113,7 @@
           <div class="logo-area">
             <img src="./src/images/logo.jpg" alt="${t("logo.alt")}" />
           </div>
-          <div class="header-jatak-name">${state.jatakView.active && state.jatakView.jatakName ? escapeHtml(state.jatakView.jatakName) : ""}</div>
+          <div class="header-jatak-name">${escapeHtml(headerTitleText())}</div>
           <label class="language-picker">
             <select id="languageSelect">
               <option value="en" ${state.language === "en" ? "selected" : ""}>${t("language.english")}</option>
@@ -107,10 +124,11 @@
 
         <section class="section section2" aria-label="section2">
           <div class="section2-icons">
-            ${iconActionHtml("H", "nav.home", "", "home")}
-            ${state.headingChoice === "home" && state.jatakView.active ? iconActionHtml("P", "homeIcon.todaysPanchanga") : ""}
-            ${state.headingChoice === "home" ? iconActionHtml("O", "homeIcon.openKundali", "", "", "open-kundali") : ""}
-            ${state.headingChoice === "home" ? iconActionHtml("N", "homeIcon.newKundali", "", "", "new-kundali") : ""}
+            ${iconActionHtml("H", "nav.home", "", "home", "", isHomeActive())}
+            ${state.headingChoice === "header" ? iconActionHtml("C", "cusp.title", "", "", "cusp-details", state.naadiView === "cusp") : ""}
+            ${state.headingChoice === "header" ? iconActionHtml("N", "nav.nakshatraNaadi", "", "", "nakshatra-naadi", state.naadiView === "nakshatra") : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("O", "homeIcon.openKundali", "", "", "open-kundali", state.openKundali.open) : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("N", "homeIcon.newKundali", "", "", "new-kundali") : ""}
           </div>
           <div class="choice-picker">
             <button class="choice-picker-button" id="headingPickerButton" type="button" aria-expanded="false" ${isHeadingPickerEnabled() ? "" : "disabled"}>
@@ -148,12 +166,7 @@
 
     document.querySelectorAll("[data-heading-choice]").forEach((option) => {
       option.addEventListener("click", () => {
-        state.headingChoice = option.dataset.headingChoice;
-        render();
-        if (state.headingChoice === "home") {
-          loadHomeGocharChart();
-          loadHomePanchang();
-        }
+        selectHeadingChoice(option.dataset.headingChoice);
       });
     });
 
@@ -180,11 +193,62 @@
         if (button.dataset.action === "open-kundali") {
           openSavedKundaliModal();
         }
+        if (button.dataset.action === "cusp-details") {
+          state.naadiView = "cusp";
+          render();
+          loadCuspDetails();
+        }
+        if (button.dataset.action === "nakshatra-naadi") {
+          state.naadiView = "nakshatra";
+          render();
+          loadNakshatraNaadi();
+          loadDashaLevel("");
+        }
+      });
+    });
+
+    document.getElementById("naadiRootSelect")?.addEventListener("change", (event) => {
+      state.naadiRules.rootChoice = event.target.value;
+      state.naadiRules.childChoice = firstNaadiChild(event.target.value);
+      render();
+    });
+
+    document.getElementById("naadiChildSelect")?.addEventListener("change", (event) => {
+      state.naadiRules.childChoice = event.target.value;
+      render();
+    });
+
+    document.querySelectorAll("[data-dasha-path]").forEach((button) => {
+      button.addEventListener("click", () => {
+        loadDashaLevel(button.dataset.dashaPath);
+      });
+    });
+
+    document.getElementById("dashaBackButton")?.addEventListener("click", () => {
+      goBackDasha();
+    });
+
+    document.querySelectorAll("[name='dashaTimeStep']").forEach((input) => {
+      input.addEventListener("change", () => {
+        state.jatakView.dasha.step = input.value;
+      });
+    });
+
+    document.querySelectorAll("[data-dasha-shift]").forEach((button) => {
+      button.addEventListener("click", () => {
+        shiftDashaWorkingDate(Number(button.dataset.dashaShift));
+      });
+    });
+
+    document.querySelectorAll("[data-dasha-current]").forEach((button) => {
+      button.addEventListener("click", () => {
+        showCurrentDasha();
       });
     });
 
     document.querySelectorAll("[data-chart-choice]").forEach((button) => {
       button.addEventListener("click", () => {
+        if (button.disabled) return;
         updateChartHeaderChoice(button.dataset.chartKey, "chart", button.dataset.chartChoice);
       });
     });
@@ -201,6 +265,7 @@
 
   function resetToDefaultHome() {
     state.headingChoice = "home";
+    state.naadiView = "cusp";
     state.jatakView = {
       active: false,
       jatakId: null,
@@ -209,6 +274,15 @@
       d1: null,
       d9: null,
       positions: null,
+      cusps: null,
+      cuspsLoading: false,
+      cuspsError: "",
+      cuspsErrorKey: "",
+      nakshatraNaadi: null,
+      nakshatraNaadiLoading: false,
+      nakshatraNaadiError: "",
+      nakshatraNaadiErrorKey: "",
+      dasha: defaultDashaState(),
       loading: false,
       error: "",
       errorKey: "",
@@ -227,6 +301,236 @@
     render();
     loadHomeGocharChart();
     loadHomePanchang();
+  }
+
+  function isHomeActive() {
+    return state.headingChoice === "home" && !state.openKundali.open && !state.kundaliForm.open;
+  }
+
+  async function selectHeadingChoice(choice) {
+    state.headingChoice = choice || "home";
+    if (state.headingChoice === "header" && state.jatakView.active) {
+      state.naadiView = "cusp";
+      state.chartHeaderChoices = {
+        d1: { chart: "D1" },
+        d9: { chart: "CHALIT" },
+      };
+      await loadSelectedSavedCharts();
+      return;
+    }
+
+    render();
+    if (state.headingChoice === "home") {
+      loadHomeGocharChart();
+      loadHomePanchang();
+    }
+  }
+
+  async function loadSelectedSavedCharts() {
+    if (!state.jatakView.active || !state.jatakView.jatakId) return;
+    const topChart = state.chartHeaderChoices.d1.chart || "D1";
+    const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
+    state.chartRotations.d1 = null;
+    state.chartRotations.d9 = null;
+    state.jatakView = {
+      ...state.jatakView,
+      d1: null,
+      d9: null,
+      cusps: null,
+      cuspsLoading: true,
+      cuspsError: "",
+      cuspsErrorKey: "",
+      loading: true,
+      error: "",
+      errorKey: "",
+    };
+    render();
+
+    const [topResult, bottomResult, cuspsResult] = await Promise.allSettled([
+      getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/chart/${chartEndpoint(topChart)}`, "chart.loadError"),
+      getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/chart/${chartEndpoint(bottomChart)}`, "chart.loadError"),
+      getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/cusps`, "cusp.loadError"),
+    ]);
+
+    if (topResult.status === "fulfilled") state.jatakView.d1 = topResult.value;
+    if (bottomResult.status === "fulfilled") state.jatakView.d9 = bottomResult.value;
+    if (topResult.status === "rejected" || bottomResult.status === "rejected") {
+      const error = topResult.reason || bottomResult.reason || {};
+      state.jatakView.error = error.message || t("chart.loadError");
+      state.jatakView.errorKey = error.messageKey || "chart.loadError";
+    }
+
+    if (cuspsResult.status === "fulfilled") {
+      state.jatakView.cusps = cuspsResult.value;
+    } else {
+      const error = cuspsResult.reason || {};
+      state.jatakView.cuspsError = error.message || t("cusp.loadError");
+      state.jatakView.cuspsErrorKey = error.messageKey || "cusp.loadError";
+    }
+
+    state.jatakView.loading = false;
+    state.jatakView.cuspsLoading = false;
+    render();
+  }
+
+  async function loadCuspDetails() {
+    if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.cuspsLoading) return;
+    state.jatakView.cuspsLoading = true;
+    state.jatakView.cuspsError = "";
+    state.jatakView.cuspsErrorKey = "";
+    render();
+
+    try {
+      state.jatakView.cusps = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/cusps`, "cusp.loadError");
+    } catch (error) {
+      state.jatakView.cuspsError = error.message || t("cusp.loadError");
+      state.jatakView.cuspsErrorKey = error.messageKey || "cusp.loadError";
+    } finally {
+      state.jatakView.cuspsLoading = false;
+      render();
+    }
+  }
+
+  async function loadNakshatraNaadi() {
+    if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.nakshatraNaadiLoading) return;
+    state.jatakView.nakshatraNaadiLoading = true;
+    state.jatakView.nakshatraNaadiError = "";
+    state.jatakView.nakshatraNaadiErrorKey = "";
+    render();
+
+    try {
+      state.jatakView.nakshatraNaadi = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/nakshatra-nadi`, "nakshatraNaadi.loadError");
+    } catch (error) {
+      state.jatakView.nakshatraNaadiError = error.message || t("nakshatraNaadi.loadError");
+      state.jatakView.nakshatraNaadiErrorKey = error.messageKey || "nakshatraNaadi.loadError";
+    } finally {
+      state.jatakView.nakshatraNaadiLoading = false;
+      render();
+    }
+  }
+
+  async function loadDashaLevel(pathValue = "") {
+    if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.dasha.loading) return;
+    const path = parseDashaPath(pathValue);
+    state.jatakView.dasha = {
+      ...state.jatakView.dasha,
+      loading: true,
+      error: "",
+      errorKey: "",
+    };
+    render();
+
+    try {
+      const query = path.length ? `/children?path=${encodeURIComponent(path.join(","))}` : "";
+      const data = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/dasha/vimshottari${query}`, "dasha.loadError");
+      state.jatakView.dasha = {
+        ...state.jatakView.dasha,
+        level: dashaLevelFromPath(path),
+        path,
+        data,
+        activePath: await resolveActiveDashaPath(data, dashaWorkingDate()),
+        loading: false,
+        error: "",
+        errorKey: "",
+      };
+    } catch (error) {
+      state.jatakView.dasha = {
+        ...state.jatakView.dasha,
+        level: dashaLevelFromPath(path),
+        path,
+        loading: false,
+        error: error.message || t("dasha.loadError"),
+        errorKey: error.messageKey || "dasha.loadError",
+      };
+    }
+    render();
+  }
+
+  function goBackDasha() {
+    const path = state.jatakView.dasha.path || [];
+    if (!path.length) return;
+    loadDashaLevel(path.slice(0, -1).join(","));
+  }
+
+  function parseDashaPath(pathValue) {
+    return String(pathValue || "")
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean);
+  }
+
+  function dashaLevelFromPath(path) {
+    if (path.length >= 2) return "antara";
+    if (path.length === 1) return "bhukti";
+    return "dasha";
+  }
+
+  async function shiftDashaWorkingDate(direction) {
+    const current = dashaWorkingDate();
+    const shifted = addDashaStep(current, state.jatakView.dasha.step || "Hour", direction);
+    await updateDashaWorkingDate(shifted);
+  }
+
+  async function setDashaCurrentDate() {
+    await updateDashaWorkingDate(new Date());
+  }
+
+  async function showCurrentDasha() {
+    state.jatakView.dasha = {
+      ...state.jatakView.dasha,
+      workingDate: new Date().toISOString(),
+    };
+    await loadDashaLevel("");
+  }
+
+  async function updateDashaWorkingDate(date) {
+    if (!date || Number.isNaN(date.getTime())) return;
+    state.jatakView.dasha = {
+      ...state.jatakView.dasha,
+      workingDate: date.toISOString(),
+      activePath: await resolveActiveDashaPath(state.jatakView.dasha.data, date),
+    };
+    render();
+  }
+
+  function dashaWorkingDate() {
+    const date = new Date(state.jatakView.dasha?.workingDate || Date.now());
+    return Number.isNaN(date.getTime()) ? new Date() : date;
+  }
+
+  function addDashaStep(date, step, direction) {
+    const next = new Date(date);
+    const amount = Number(direction) || 1;
+    const normalized = String(step || "Hour").toLowerCase();
+    if (normalized === "5 years") next.setFullYear(next.getFullYear() + 5 * amount);
+    else if (normalized === "year") next.setFullYear(next.getFullYear() + amount);
+    else if (normalized === "month") next.setMonth(next.getMonth() + amount);
+    else if (normalized === "day") next.setDate(next.getDate() + amount);
+    else if (normalized === "10 min") next.setMinutes(next.getMinutes() + 10 * amount);
+    else if (normalized === "minute") next.setMinutes(next.getMinutes() + amount);
+    else next.setHours(next.getHours() + amount);
+    return next;
+  }
+
+  async function resolveActiveDashaPath(data, targetDate = dashaWorkingDate()) {
+    let active = (data?.periods || []).find((period) => isCurrentDashaPeriod(period, targetDate));
+    let path = Array.isArray(active?.path) ? active.path : [];
+
+    while (path.length > 0 && path.length < 3) {
+      try {
+        const childData = await getJson(
+          `/jatak/${encodeURIComponent(state.jatakView.jatakId)}/dasha/vimshottari/children?path=${encodeURIComponent(path.join(","))}`,
+          "dasha.loadError",
+        );
+        active = (childData?.periods || []).find((period) => isCurrentDashaPeriod(period, targetDate));
+        if (!active?.path?.length || active.path.join(",") === path.join(",")) break;
+        path = active.path;
+      } catch {
+        break;
+      }
+    }
+
+    return path;
   }
 
   function rotateChartToSign(chartKey, signIndex) {
@@ -275,26 +579,42 @@
     return Boolean(state.jatakView.active && state.jatakView.d1 && state.jatakView.d9 && !state.jatakView.loading && !state.jatakView.error);
   }
 
+  function headerTitleText() {
+    return state.jatakView.active && state.jatakView.jatakName ? state.jatakView.jatakName : t("header.welcome");
+  }
+
   function sectionMiddleHtml() {
-    if (state.headingChoice === "home") {
+    if (state.headingChoice === "home" || state.headingChoice === "header") {
+      const topChart = state.chartHeaderChoices.d1.chart || "D1";
+      const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
       return `
         <div class="home-middle-layout">
           <div class="home-middle-left">
             <div class="home-left-top">
-              <div class="home-left-top-part1">${state.jatakView.active ? chartHeaderHtml("d1", "chart.d1Chart", state.jatakView.dateTimeLabel, "D1") : gocharChartHeaderHtml()}</div>
+              <div class="home-left-top-part1">${state.jatakView.active ? chartHeaderHtml("d1", "chart.d1Chart", state.jatakView.dateTimeLabel, topChart) : gocharChartHeaderHtml()}</div>
               <div class="home-left-top-part2">${state.jatakView.active ? jatakChartHtml("d1") : gocharChartHtml()}</div>
             </div>
-            <div class="home-left-bottom">${state.jatakView.active ? jatakChartWithHeaderHtml("d9", "chart.d9Chart", "D9") : panchangTilesHtml()}</div>
+            <div class="home-left-bottom">${state.jatakView.active ? jatakChartWithHeaderHtml("d9", "chart.d9Chart", bottomChart) : panchangTilesHtml()}</div>
           </div>
           <div class="home-middle-right">
-            <div class="home-right-top">${t("chart.planetaryDetail")}</div>
-            <div class="home-right-bottom">${planetaryDetailHtml()}</div>
+            <div class="home-right-top">${rightPanelTitleHtml()}</div>
+            <div class="home-right-bottom">${rightPanelBodyHtml()}</div>
           </div>
         </div>
       `;
     }
 
     return `<div class="generic-middle-layout"></div>`;
+  }
+
+  function rightPanelTitleHtml() {
+    if (state.headingChoice !== "header") return t("chart.planetaryDetail");
+    return state.naadiView === "nakshatra" ? t("nav.nakshatraNaadi") : t("cusp.title");
+  }
+
+  function rightPanelBodyHtml() {
+    if (state.headingChoice !== "header") return planetaryDetailHtml();
+    return state.naadiView === "nakshatra" ? nakshatraNaadiHtml() : cuspDetailHtml();
   }
 
   function kundaliModalHtml() {
@@ -472,7 +792,7 @@
         <td>${escapeHtml(record.date || "")}</td>
         <td>${escapeHtml(record.time || "")}</td>
         <td>${escapeHtml(record.city_name || "")}</td>
-        <td>${escapeHtml(record.gender || "")}</td>
+        <td>${escapeHtml(localizedGender(record.gender))}</td>
         <td>
           <div class="open-kundali-actions">
             <button data-open-view="${id}" type="button" title="${t("openKundali.view")}" aria-label="${t("openKundali.view")}">
@@ -612,6 +932,332 @@
     `;
   }
 
+  function cuspDetailHtml() {
+    if (state.jatakView.cuspsLoading) {
+      return `<div class="chart-state">${t("cusp.loading")}</div>`;
+    }
+
+    if (state.jatakView.cuspsError) {
+      return `<div class="chart-state error">${state.jatakView.cuspsErrorKey ? t(state.jatakView.cuspsErrorKey) : state.jatakView.cuspsError}</div>`;
+    }
+
+    const cusps = state.jatakView.cusps?.cusps || [];
+    if (!cusps.length) {
+      return `<div class="chart-state">${t("cusp.waiting")}</div>`;
+    }
+
+    const columns = ["house_number", "sign", "rashi_swami", "degree_in_sign", "nakshatra", "nakshatra_swami", "sub_lord", "sub_sub_lord"];
+    return `
+      <div class="planetary-detail-table-wrap">
+        <table class="planetary-detail-table cusp-detail-table">
+          <thead>
+            <tr>
+              ${columns.map((column) => `<th>${escapeHtml(formatColumnLabel(column))}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${cusps
+              .map(
+                (cusp) => `
+                  <tr>
+                    ${columns.map((column) => `<td>${escapeHtml(formatCuspValue(column, cusp[column], cusp))}</td>`).join("")}
+                  </tr>
+                `,
+              )
+              .join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function formatCuspValue(column, value, row = {}) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (column === "degree_in_sign") return formatDegreeDms(value);
+    if (column === "sign") return localizedSignValue(value, row.sign_index);
+    if (column === "nakshatra") return localizedNakshatraName(value);
+    if (["rashi_swami", "nakshatra_swami", "sub_lord", "sub_sub_lord"].includes(column)) {
+      return localizedPlanetFullName(value);
+    }
+    return String(value);
+  }
+
+  function formatColumnLabel(column) {
+    const key = String(column || "").trim();
+    if (!key) return "";
+    const translated = t(`column.${key}`);
+    if (translated !== `column.${key}`) return translated;
+    return key
+      .split("_")
+      .filter(Boolean)
+      .map((word) => {
+        const lower = word.toLowerCase();
+        if (lower === "id") return "ID";
+        return lower.charAt(0).toUpperCase() + lower.slice(1);
+      })
+      .join(" ");
+  }
+
+  function nakshatraNaadiHtml() {
+    if (state.jatakView.nakshatraNaadiLoading) {
+      return `<div class="chart-state">${t("nakshatraNaadi.loading")}</div>`;
+    }
+
+    if (state.jatakView.nakshatraNaadiError) {
+      return `<div class="chart-state error">${state.jatakView.nakshatraNaadiErrorKey ? t(state.jatakView.nakshatraNaadiErrorKey) : state.jatakView.nakshatraNaadiError}</div>`;
+    }
+
+    const planets = state.jatakView.nakshatraNaadi?.planets || {};
+    const planetGroups = nakshatraNaadiGroups(planets);
+    if (!planetGroups.length) {
+      return `<div class="chart-state">${t("nakshatraNaadi.waiting")}</div>`;
+    }
+
+    const chunkSize = Math.ceil(planetGroups.length / 3);
+    const columns = [planetGroups.slice(0, chunkSize), planetGroups.slice(chunkSize, chunkSize * 2), planetGroups.slice(chunkSize * 2)];
+    return `
+      <div class="nakshatra-naadi-panel">
+        ${naadiRuleControlsHtml()}
+        <div class="nakshatra-naadi-grid">
+          ${columns
+            .map(
+              (column) => `
+                <div class="nakshatra-naadi-column">
+                  ${column.map(nakshatraNaadiGroupHtml).join("")}
+                </div>
+              `,
+            )
+            .join("")}
+        </div>
+        ${dashaTableHtml()}
+      </div>
+    `;
+  }
+
+  function naadiRuleControlsHtml() {
+    const roots = Object.keys(state.naadiRules.data || {});
+    const children = Object.keys(state.naadiRules.data?.[state.naadiRules.rootChoice] || {});
+    return `
+      <div class="naadi-rule-controls">
+        <label>
+          <select id="naadiRootSelect">
+            ${roots.map((root) => `<option value="${escapeHtml(root)}" ${root === state.naadiRules.rootChoice ? "selected" : ""}>${escapeHtml(root)}</option>`).join("")}
+          </select>
+        </label>
+        <label>
+          <select id="naadiChildSelect">
+            ${children.map((child) => `<option value="${escapeHtml(child)}" ${child === state.naadiRules.childChoice ? "selected" : ""}>${escapeHtml(child)}</option>`).join("")}
+          </select>
+        </label>
+      </div>
+    `;
+  }
+
+  function nakshatraNaadiGroups(planets) {
+    const order = ["ketu", "venus", "sun", "moon", "mars", "rahu", "jupiter", "saturn", "mercury"];
+    return order
+      .map((key) => planets[key])
+      .filter(Boolean)
+      .map((planet) => ["current_planet", "nakshatra_lord", "sub_lord"].map((field) => nakshatraNaadiRow(planet[field])).filter(Boolean))
+      .filter((group) => group.length);
+  }
+
+  function nakshatraNaadiGroupHtml(group) {
+    return `
+      <table class="nakshatra-naadi-table">
+        <tbody>
+          ${group
+            .map(
+              (row, index) => `
+                <tr>
+                  <th class="${index === 0 ? "group-primary" : ""}">${escapeHtml(row.planet)}</th>
+                  <td>${nakshatraNaadiValuesHtml(row.values)}</td>
+                </tr>
+              `,
+            )
+            .join("")}
+        </tbody>
+      </table>
+    `;
+  }
+
+  function nakshatraNaadiRow(item) {
+    if (!item) return null;
+    return {
+      planet: shortPlanetName(item.planet_key || item.planet),
+      values: Array.isArray(item.value) ? item.value : [],
+    };
+  }
+
+  function nakshatraNaadiValuesHtml(values) {
+    return values
+      .map((value) => {
+        const number = Number(value);
+        const colorClass = naadiRuleColorClass(number);
+        return `<span class="${colorClass}">${escapeHtml(String(value))}</span>`;
+      })
+      .join('<span class="naadi-number-separator">,</span>');
+  }
+
+  function naadiRuleColorClass(number) {
+    const rule = selectedNaadiRule();
+    if (rule.green?.map(Number).includes(number)) return "naadi-number-green";
+    if (rule.red?.map(Number).includes(number)) return "naadi-number-red";
+    return "naadi-number-default";
+  }
+
+  function selectedNaadiRule() {
+    return state.naadiRules.data?.[state.naadiRules.rootChoice]?.[state.naadiRules.childChoice] || {};
+  }
+
+  function dashaTableHtml() {
+    const dasha = state.jatakView.dasha || defaultDashaState();
+    if (dasha.loading) {
+      return `<div class="dasha-panel"><div class="chart-state">${t("dasha.loading")}</div></div>`;
+    }
+
+    if (dasha.error) {
+      return `<div class="dasha-panel"><div class="chart-state error">${dasha.errorKey ? t(dasha.errorKey) : dasha.error}</div></div>`;
+    }
+
+    const periods = dasha.data?.periods || [];
+    if (!periods.length) {
+      return `<div class="dasha-panel"><div class="chart-state">${t("dasha.waiting")}</div></div>`;
+    }
+
+    const level = dasha.level || "dasha";
+    return `
+      <div class="dasha-section">
+        <div class="dasha-panel">
+          <div class="dasha-heading">
+            ${level !== "dasha" ? `<button id="dashaBackButton" type="button">${t("common.back")}</button>` : `<span></span>`}
+            <strong>${t(`dasha.${level}`)}</strong>
+            <button class="dasha-current-link" data-dasha-current type="button">${t("dasha.currentDasha")}</button>
+          </div>
+          <div class="dasha-table-wrap">
+            <table class="dasha-table">
+              <thead>
+                <tr>
+                  <th>${t("dasha.planet")}</th>
+                  <th>${t("dasha.startDate")}</th>
+                  <th>${t("dasha.endDate")}</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${periods.map((period) => dashaPeriodRowHtml(period, level)).join("")}
+              </tbody>
+            </table>
+          </div>
+        </div>
+        ${dashaTimingControlsHtml()}
+      </div>
+    `;
+  }
+
+  function dashaTimingControlsHtml() {
+    const options = ["5 Years", "Year", "Month", "Day", "Hour", "10 Min", "Minute"];
+    const selectedStep = state.jatakView.dasha?.step || "Hour";
+    return `
+      <div class="dasha-timing-panel">
+        ${activeDashaNamesHtml()}
+        <div class="dasha-working-date"><span>${t("dasha.workingDate")}</span><strong>${escapeHtml(formatDateTime(dashaWorkingDate().toISOString()))}</strong></div>
+        <div class="dasha-time-options">
+          ${options
+            .map(
+              (option) => `
+                <label>
+                  <input type="radio" name="dashaTimeStep" value="${escapeHtml(option)}" ${option === selectedStep ? "checked" : ""} />
+                  <span>${escapeHtml(option)}</span>
+                </label>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="dasha-step-buttons">
+          <button data-dasha-shift="-1" type="button">-</button>
+          <button data-dasha-shift="1" type="button">+</button>
+        </div>
+      </div>
+    `;
+  }
+
+  function activeDashaNamesHtml() {
+    const periods = state.jatakView.dasha?.data?.periods || [];
+    const active = periods.find(isCurrentDashaPeriod);
+    const path = state.jatakView.dasha?.activePath?.length ? state.jatakView.dasha.activePath : Array.isArray(active?.path) ? active.path : [];
+    const names = {
+      dasha: dashaActiveNameHtml(path[0]),
+      bhukti: dashaActiveNameHtml(path[1]),
+      antara: dashaActiveNameHtml(path[2]),
+    };
+    return `
+      <div class="dasha-active-summary">
+        <div><span>${t("dasha.activeDasha")}</span>${names.dasha}</div>
+        <div><span>${t("dasha.activeBhukti")}</span>${names.bhukti}</div>
+        <div><span>${t("dasha.activeAntara")}</span>${names.antara}</div>
+      </div>
+    `;
+  }
+
+  function dashaActiveNameHtml(planetKey) {
+    if (!planetKey) return `<strong>-</strong>`;
+    const key = String(planetKey).toLowerCase();
+    return `
+      <strong class="dasha-active-planet">
+        <img src="./src/images/planet-${escapeHtml(key)}.svg" alt="" />
+        <span>${escapeHtml(localizedPlanetFullName(key))}</span>
+      </strong>
+    `;
+  }
+
+  function dashaPeriodRowHtml(period, level) {
+    const path = Array.isArray(period.path) ? period.path : [];
+    const label = dashaPathLabel(period);
+    const clickable = level !== "antara" && path.length > 0 && path.length < 3;
+    const activeClass = isCurrentDashaPeriod(period, dashaWorkingDate()) ? "active" : "";
+    return `
+      <tr class="${activeClass}">
+        <td>
+          ${
+            clickable
+              ? `<button class="dasha-link" data-dasha-path="${escapeHtml(path.join(","))}" type="button">${escapeHtml(label)}</button>`
+              : `<span class="dasha-link dasha-link-static">${escapeHtml(label)}</span>`
+          }
+        </td>
+        <td>${escapeHtml(formatDateTime(period.start))}</td>
+        <td>${escapeHtml(formatDateTime(period.end))}</td>
+      </tr>
+    `;
+  }
+
+  function isCurrentDashaPeriod(period, targetDate = dashaWorkingDate()) {
+    const start = new Date(period.start);
+    const end = new Date(period.end);
+    const now = targetDate;
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) return false;
+    return now >= start && now < end;
+  }
+
+  function dashaPathLabel(period) {
+    const path = Array.isArray(period.path) ? period.path : [];
+    if (!path.length) return localizedPlanetFullName(period.lord_key || period.lord || "");
+    return path.map((planet) => localizedPlanetFullName(planet)).join("/");
+  }
+
+  function defaultDashaState() {
+    return {
+      level: "dasha",
+      path: [],
+      activePath: [],
+      workingDate: new Date().toISOString(),
+      step: "Hour",
+      data: null,
+      loading: false,
+      error: "",
+      errorKey: "",
+    };
+  }
+
   function planetaryDetailRowHtml(position) {
     return `
       <tr>
@@ -693,15 +1339,22 @@
     const selectedChart = choices.chart || selectedValue;
     return `
       <div class="gochar-chart-heading saved-chart-heading">
-        ${chartMiniPickerHtml(chartKey, "chart", selectedChart, chartPickerOptions(), "chart.selectChart")}
+        ${chartMiniPickerHtml(chartKey, "chart", selectedChart, chartPickerOptions(), "chart.selectChart", true)}
         <span class="chart-heading-spacer" aria-hidden="true"></span>
         ${dateTimeLabel ? `<span>${escapeHtml(dateTimeLabel)}</span>` : ""}
       </div>
     `;
   }
 
-  function chartMiniPickerHtml(chartKey, type, selectedValue, options, labelKey) {
+  function chartMiniPickerHtml(chartKey, type, selectedValue, options, labelKey, disabled = false) {
     const selectedLabel = chartPickerLabel(selectedValue, options);
+    if (disabled) {
+      return `
+        <span class="chart-mini-picker chart-mini-picker-chart chart-mini-picker-disabled" aria-label="${t(labelKey)}">
+          ${escapeHtml(selectedLabel)}
+        </span>
+      `;
+    }
     return `
       <details class="chart-mini-picker chart-mini-picker-chart">
         <summary aria-label="${t(labelKey)}">${escapeHtml(selectedLabel)}</summary>
@@ -726,6 +1379,7 @@
       { value: "D1", label: "Birth Chart - D1" },
       { value: "D2", label: "Hora Chart - D2" },
       { value: "D3", label: "Dreshkan Chart - D3" },
+      { value: "CHALIT", label: "Chalit Chart - Chalit" },
       { value: "D9", label: "Navamansha Chart - D9" },
     ];
   }
@@ -851,7 +1505,8 @@
       11: [92, 26],
       12: [76, 5],
     }[slot.house] || [slot.x, slot.y];
-    return `<text class="diamond-house-number" x="${position[0]}" y="${position[1]}" data-rotate-chart="${escapeHtml(chartKey)}" data-sign-index="${houseNumber}">${houseNumber}</text>`;
+    const label = houseNumber || "";
+    return `<text class="diamond-house-number" x="${position[0]}" y="${position[1]}" data-rotate-chart="${escapeHtml(chartKey)}" data-sign-index="${label}">${label}</text>`;
   }
 
   function northHouseBodiesHtml(slot, bodies) {
@@ -911,10 +1566,11 @@
   }
 
   function chartCellHtml(house) {
+    const signIndex = house.sign_index || "";
     return `
       <div class="chart-cell">
         <span class="chart-house-number">${house.house}</span>
-        <strong>${shortSign(house.sign_index)}</strong>
+        <strong>${signIndex ? shortSign(signIndex) : ""}</strong>
         <div>${house.bodies.map((body) => `${shortPlanetName(body.name)}${planetDegreeLabel(body.degree)}`).join(" ")}</div>
       </div>
     `;
@@ -952,7 +1608,7 @@
     const placements = chart.placements || {};
     return (chart.houses || []).map((house) => ({
       house: house.house,
-      sign_index: house.sign_index,
+      sign_index: house.sign_index || house.cusp_sign_index,
       bodies: (house.bodies || [])
         .filter((body) => shouldShowPlanet(body))
         .map((body) => {
@@ -1024,6 +1680,15 @@
       d1: null,
       d9: null,
       positions: null,
+      cusps: null,
+      cuspsLoading: false,
+      cuspsError: "",
+      cuspsErrorKey: "",
+      nakshatraNaadi: null,
+      nakshatraNaadiLoading: false,
+      nakshatraNaadiError: "",
+      nakshatraNaadiErrorKey: "",
+      dasha: defaultDashaState(),
       loading: true,
       error: "",
       errorKey: "",
@@ -1083,6 +1748,26 @@
     } catch {
       return {};
     }
+  }
+
+  async function loadNaadiRules() {
+    try {
+      const response = await fetch("./src/data/naadi.json");
+      if (!response.ok) return {};
+      return response.json();
+    } catch {
+      return {};
+    }
+  }
+
+  function initializeNaadiRuleChoices() {
+    const roots = Object.keys(state.naadiRules.data || {});
+    state.naadiRules.rootChoice = state.naadiRules.rootChoice || roots[0] || "";
+    state.naadiRules.childChoice = state.naadiRules.childChoice || firstNaadiChild(state.naadiRules.rootChoice);
+  }
+
+  function firstNaadiChild(root) {
+    return Object.keys(state.naadiRules.data?.[root] || {})[0] || "";
   }
 
   async function getJson(path, errorKey = "chart.loadError") {
@@ -1616,9 +2301,7 @@
   }
 
   function planetFullName(name) {
-    const key = String(name || "").toLowerCase();
-    const value = t(`planet.${key}`);
-    return value === `planet.${key}` ? key : value;
+    return localizedPlanetFullName(name);
   }
 
   function planetDegreeLabel(degree) {
@@ -1646,14 +2329,73 @@
     return state.messages.mr[`planet.${key}`] || planetFullName(key);
   }
 
+  function localizedPlanetFullName(name) {
+    const key = String(name || "").trim().toLowerCase();
+    const englishNames = {
+      lagna: "Lagna",
+      asc: "Lagna",
+      ascendant: "Lagna",
+      sun: "Sun",
+      moon: "Moon",
+      mars: "Mars",
+      mercury: "Mercury",
+      jupiter: "Jupiter",
+      venus: "Venus",
+      saturn: "Saturn",
+      rahu: "Rahu",
+      ketu: "Ketu",
+      uranus: "Uranus",
+      neptune: "Neptune",
+      pluto: "Pluto",
+    };
+    if (state.language !== "mr") return englishNames[key] || toTitleCase(String(name || ""));
+    return state.messages.mr[`planet.${key}`] || englishNames[key] || toTitleCase(String(name || ""));
+  }
+
   function localizedSignName(signIndex) {
     if (state.language !== "mr") return t(`sign.${signIndex}`);
     return state.messages.mr[`sign.${signIndex}`] || shortSign(signIndex);
   }
 
+  function localizedSignValue(signName, signIndex) {
+    const index = Number(signIndex) || signIndexFromName(signName);
+    if (index) return localizedSignName(index);
+    return signName || "-";
+  }
+
+  function signIndexFromName(signName) {
+    const normalized = String(signName || "").trim().toLowerCase();
+    const signs = {
+      aries: 1,
+      taurus: 2,
+      gemini: 3,
+      cancer: 4,
+      leo: 5,
+      virgo: 6,
+      libra: 7,
+      scorpio: 8,
+      sagittarius: 9,
+      capricorn: 10,
+      aquarius: 11,
+      pisces: 12,
+    };
+    return signs[normalized] || null;
+  }
+
+  function localizedGender(value) {
+    const normalized = String(value || "").trim().toLowerCase();
+    if (!normalized) return "";
+    if (normalized === "male") return t("kundali.genderMale");
+    if (normalized === "female") return t("kundali.genderFemale");
+    return toTitleCase(String(value));
+  }
+
   function localizedNakshatraName(name) {
     if (state.language !== "mr") return name || "-";
     const key = String(name || "").trim().toLowerCase();
+    const localeKey = key.replace(/\s+/g, "-");
+    const translated = t(`panchangValue.nakshatra.${localeKey}`);
+    if (translated !== `panchangValue.nakshatra.${localeKey}`) return translated;
     const names = {
       ashwini: "अश्विनी",
       bharani: "भरणी",
@@ -1718,6 +2460,16 @@
     return index === null || index === undefined || index === "" ? value : `${value} (${index})`;
   }
 
+  function toTitleCase(value) {
+    return String(value || "")
+      .replace(/_/g, " ")
+      .trim()
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(" ");
+  }
+
   function displayValue(value) {
     return value === null || value === undefined || value === "" ? "-" : String(value);
   }
@@ -1742,9 +2494,9 @@
     return `${hour}:${minute}:${second}`;
   }
 
-  function iconActionHtml(icon, labelKey, subLabelKey = "", sectionChoice = "", action = "") {
+  function iconActionHtml(icon, labelKey, subLabelKey = "", sectionChoice = "", action = "", active = false) {
     return `
-      <button class="section2-icon-action" ${sectionChoice ? `data-section-choice="${sectionChoice}"` : ""} ${action ? `data-action="${action}"` : ""} type="button">
+      <button class="section2-icon-action ${active ? "active" : ""}" ${sectionChoice ? `data-section-choice="${sectionChoice}"` : ""} ${action ? `data-action="${action}"` : ""} type="button">
         <span class="section2-icon-symbol" aria-hidden="true">${icon}</span>
         <span class="section2-icon-text">
           <strong>${t(labelKey)}</strong>

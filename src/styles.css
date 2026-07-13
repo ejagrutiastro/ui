@@ -74,10 +74,6 @@ select {
   white-space: nowrap;
 }
 
-.header-jatak-name:empty {
-  display: none;
-}
-
 .section2,
 .section3 {
   color: #1f2937;
@@ -121,6 +117,18 @@ select {
   white-space: nowrap;
 }
 
+.section2-icon-action.active {
+  border-color: rgba(15, 95, 168, 0.58);
+  color: #ffffff;
+  background: #0f5fa8;
+  box-shadow: 0 7px 18px rgba(15, 95, 168, 0.24);
+}
+
+.section2-icon-action.active .section2-icon-symbol {
+  color: #0f5fa8;
+  background: #ffffff;
+}
+
 .section2-icon-symbol {
   display: grid;
   place-items: center;
@@ -148,6 +156,10 @@ select {
   font-size: 10px;
   font-weight: 700;
   line-height: 1.05;
+}
+
+.section2-icon-action.active .section2-icon-text span {
+  color: rgba(255, 255, 255, 0.82);
 }
 
 .section3 {
@@ -301,6 +313,345 @@ select {
   background: #eef6ff;
 }
 
+.cusp-detail-table {
+  min-width: 760px;
+  font-size: 11px;
+}
+
+.cusp-detail-table th,
+.cusp-detail-table td {
+  padding: 6px 8px;
+}
+
+.nakshatra-naadi-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) minmax(170px, 0.8fr);
+  gap: 6px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.naadi-rule-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+  gap: 8px;
+  padding: 4px;
+}
+
+.naadi-rule-controls label {
+  min-width: 0;
+}
+
+.naadi-rule-controls select {
+  width: 100%;
+  min-height: 32px;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 999px;
+  padding: 0 34px 0 12px;
+  color: #0f5fa8;
+  background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.92), 0 5px 16px rgba(15, 95, 168, 0.14);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.nakshatra-naadi-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(180px, 1fr));
+  gap: 5px;
+  width: 100%;
+  min-width: 720px;
+  min-height: 0;
+  padding: 0 4px 4px;
+  overflow: auto;
+}
+
+.dasha-section {
+  display: grid;
+  grid-template-columns: 50% minmax(260px, 38%);
+  align-items: end;
+  justify-content: start;
+  gap: 10px;
+  align-self: start;
+  justify-self: start;
+  width: 100%;
+  transform: translateY(-28%);
+  min-height: 0;
+  padding: 4px;
+  overflow: hidden;
+}
+
+.dasha-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  border-top: 0;
+  overflow: hidden;
+}
+
+.dasha-current-link {
+  justify-self: end;
+  min-height: 24px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  padding: 0;
+  color: #0f5fa8;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.dasha-heading {
+  display: grid;
+  grid-template-columns: 80px 1fr 80px;
+  align-items: center;
+  min-height: 30px;
+  color: #0f5fa8;
+  font-size: 13px;
+  font-weight: 900;
+  text-align: center;
+}
+
+.dasha-heading button,
+.dasha-link {
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 999px;
+  color: #0f5fa8;
+  background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.dasha-heading button {
+  min-height: 26px;
+}
+
+.dasha-table-wrap {
+  min-height: 0;
+  overflow: auto;
+}
+
+.dasha-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #0f2537;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.dasha-table th,
+.dasha-table td {
+  border: 1px solid #6faec0;
+  padding: 2px 6px;
+  line-height: 1.1;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dasha-table th {
+  position: sticky;
+  top: 0;
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.dasha-link {
+  display: inline-block;
+  padding: 3px 9px;
+}
+
+.dasha-link-static {
+  cursor: default;
+}
+
+.dasha-table tbody tr.active td {
+  background: #fff4bf;
+}
+
+.dasha-table tbody tr.active .dasha-link {
+  border-color: #b7791f;
+  color: #8a4b00;
+  background: #fff7d6;
+}
+
+.dasha-timing-panel {
+  display: grid;
+  align-self: end;
+  transform: translateY(0);
+  min-width: 0;
+  border-top: 4px solid #0f8eb4;
+  color: #111827;
+  background: #ffffff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.dasha-active-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
+  padding: 4px;
+}
+
+.dasha-active-summary div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  background: #eef6ff;
+  padding: 3px 5px;
+}
+
+.dasha-active-summary span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dasha-active-summary strong {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 1000;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.dasha-active-summary strong img {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+}
+
+.dasha-active-summary strong span {
+  min-width: 0;
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 1000;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dasha-working-date {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 6px;
+  align-items: center;
+  padding: 0 4px 4px;
+}
+
+.dasha-working-date span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.dasha-working-date strong {
+  color: #0f5fa8;
+  font-size: 11px;
+  font-weight: 1000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dasha-time-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(70px, 1fr));
+  gap: 3px 14px;
+}
+
+.dasha-time-options label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 20px;
+}
+
+.dasha-time-options input {
+  margin: 0;
+}
+
+.dasha-step-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  margin-top: 2px;
+}
+
+.dasha-step-buttons button {
+  min-height: 25px;
+  border: 1px solid #aeb8c2;
+  color: #111827;
+  background: #f7f7f7;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.nakshatra-naadi-column {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+}
+
+.nakshatra-naadi-table {
+  width: 100%;
+  height: max-content;
+  border-collapse: collapse;
+  border: 3px solid #4c8fa5;
+  color: #0f2537;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.nakshatra-naadi-table th,
+.nakshatra-naadi-table td {
+  border: 1px solid #6faec0;
+  padding: 3px 7px;
+  line-height: 1.2;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.nakshatra-naadi-table th {
+  width: 52px;
+  color: #0f2537;
+  background: wheat;
+}
+
+.nakshatra-naadi-table th.group-primary {
+  color: #ff0000;
+  font-weight: 1000;
+}
+
+.naadi-number-green {
+  color: #006400;
+  font-style: italic;
+  font-weight: 1000;
+}
+
+.naadi-number-red {
+  color: #ff0000;
+  font-style: italic;
+  font-weight: 1000;
+}
+
+.naadi-number-default,
+.naadi-number-separator {
+  color: #6b7280;
+  font-style: normal;
+  font-weight: 400;
+}
+
 .generic-middle-layout {
   width: 100%;
   height: 100%;
@@ -396,6 +747,26 @@ select {
 
 .chart-mini-picker summary::-webkit-details-marker {
   display: none;
+}
+
+.chart-mini-picker-disabled {
+  display: block;
+  min-height: 26px;
+  border: 1px solid rgba(15, 95, 168, 0.16);
+  border-radius: 999px;
+  padding: 5px 10px;
+  color: #0f5fa8;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.92),
+    0 5px 14px rgba(15, 95, 168, 0.08);
+  cursor: default;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1.2;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .chart-mini-picker summary::after {
@@ -637,6 +1008,7 @@ select {
 }
 
 .logo-area {
+  grid-column: 1;
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -655,6 +1027,7 @@ select {
 }
 
 .language-picker {
+  grid-column: 3;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -777,7 +1150,7 @@ select {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   width: min(760px, calc(100vw - 36px));
-  max-height: min(720px, calc(100vh - 36px));
+  max-height: calc(100vh - 36px);
   border: 1px solid rgba(15, 95, 168, 0.24);
   border-radius: 10px;
   background: #ffffff;
@@ -821,14 +1194,14 @@ select {
 .kundali-form {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
-  padding: 18px;
-  overflow: auto;
+  gap: 10px 14px;
+  padding: 14px 18px 16px;
+  overflow: hidden;
 }
 
 .kundali-form label {
   display: grid;
-  gap: 7px;
+  gap: 5px;
   min-width: 0;
 }
 
@@ -878,7 +1251,7 @@ select {
 .kundali-form select,
 .kundali-form textarea {
   width: 100%;
-  min-height: 40px;
+  min-height: 36px;
   border: 1px solid #d7e2f0;
   border-radius: 8px;
   padding: 8px 10px;
@@ -903,7 +1276,7 @@ select {
 }
 
 .kundali-note-field textarea {
-  min-height: 76px;
+  min-height: 58px;
   resize: vertical;
 }
 
@@ -1201,5 +1574,10 @@ select {
 
   .kundali-form {
     grid-template-columns: 1fr;
+  }
+
+  .dasha-section {
+    grid-template-columns: 1fr;
+    width: 100%;
   }
 }
