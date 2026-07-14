@@ -84,6 +84,15 @@
       editingId: null,
       editForm: null,
     },
+    transitModal: {
+      open: false,
+      data: null,
+      workingDate: new Date().toISOString(),
+      step: "Day",
+      loading: false,
+      error: "",
+      errorKey: "",
+    },
     messages: {
       en: {},
       mr: {},
@@ -150,6 +159,7 @@
         </section>
         ${state.kundaliForm.open ? kundaliModalHtml() : ""}
         ${state.openKundali.open ? openKundaliModalHtml() : ""}
+        ${state.transitModal.open ? transitGocharModalHtml() : ""}
       </main>
     `;
 
@@ -204,6 +214,9 @@
           loadNakshatraNaadi();
           loadDashaLevel("");
         }
+        if (button.dataset.action === "view-gochar") {
+          openTransitGocharModal();
+        }
       });
     });
 
@@ -237,6 +250,20 @@
     document.querySelectorAll("[data-dasha-shift]").forEach((button) => {
       button.addEventListener("click", () => {
         shiftDashaWorkingDate(Number(button.dataset.dashaShift));
+      });
+    });
+
+    document.getElementById("closeTransitGocharModal")?.addEventListener("click", closeTransitGocharModal);
+
+    document.querySelectorAll("[name='transitTimeStep']").forEach((input) => {
+      input.addEventListener("change", () => {
+        state.transitModal.step = input.value;
+      });
+    });
+
+    document.querySelectorAll("[data-transit-shift]").forEach((button) => {
+      button.addEventListener("click", () => {
+        shiftTransitGocharDate(Number(button.dataset.transitShift));
       });
     });
 
@@ -409,6 +436,48 @@
     }
   }
 
+  function openTransitGocharModal() {
+    state.transitModal = {
+      ...state.transitModal,
+      open: true,
+      workingDate: state.jatakView.dasha?.workingDate || new Date().toISOString(),
+      error: "",
+      errorKey: "",
+    };
+    render();
+    loadTransitGochar();
+  }
+
+  function closeTransitGocharModal() {
+    state.transitModal.open = false;
+    render();
+  }
+
+  async function loadTransitGochar() {
+    if (!state.transitModal.open || state.transitModal.loading) return;
+    state.transitModal.loading = true;
+    state.transitModal.error = "";
+    state.transitModal.errorKey = "";
+    render();
+
+    try {
+      state.transitModal.data = await getJson(`/chart/gochar?at=${encodeURIComponent(state.transitModal.workingDate)}`, "chart.loadError");
+    } catch (error) {
+      state.transitModal.error = error.message || t("chart.loadError");
+      state.transitModal.errorKey = error.messageKey || "chart.loadError";
+    } finally {
+      state.transitModal.loading = false;
+      render();
+    }
+  }
+
+  async function shiftTransitGocharDate(direction) {
+    const date = new Date(state.transitModal.workingDate || Date.now());
+    const shifted = addDashaStep(Number.isNaN(date.getTime()) ? new Date() : date, state.transitModal.step || "Day", direction);
+    state.transitModal.workingDate = shifted.toISOString();
+    await loadTransitGochar();
+  }
+
   async function loadDashaLevel(pathValue = "") {
     if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.dasha.loading) return;
     const path = parseDashaPath(pathValue);
@@ -496,6 +565,34 @@
   function dashaWorkingDate() {
     const date = new Date(state.jatakView.dasha?.workingDate || Date.now());
     return Number.isNaN(date.getTime()) ? new Date() : date;
+  }
+
+  function dashaRunningAgeLabel() {
+    const birthDate = parseJatakBirthDate();
+    const workingDate = dashaWorkingDate();
+    if (!birthDate || workingDate < birthDate) return "";
+    let completedYears = workingDate.getFullYear() - birthDate.getFullYear();
+    const hasBirthdayPassed =
+      workingDate.getMonth() > birthDate.getMonth() ||
+      (workingDate.getMonth() === birthDate.getMonth() && workingDate.getDate() >= birthDate.getDate());
+    if (!hasBirthdayPassed) completedYears -= 1;
+    return `(${completedYears + 1} yrs)`;
+  }
+
+  function dashaRunningAgeHtml() {
+    const label = dashaRunningAgeLabel();
+    return label ? `<span class="dasha-running-age">${escapeHtml(label)}</span>` : "";
+  }
+
+  function parseJatakBirthDate() {
+    const value = String(state.jatakView.dateTimeLabel || "").trim();
+    const match = value.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+    if (!match) return null;
+    const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+    const month = months[match[2].toLowerCase()];
+    if (month === undefined) return null;
+    const date = new Date(Number(match[3]), month, Number(match[1]));
+    return Number.isNaN(date.getTime()) ? null : date;
   }
 
   function addDashaStep(date, step, direction) {
@@ -971,6 +1068,356 @@
     `;
   }
 
+  function transitGocharModalHtml() {
+    const options = ["Month", "Day", "Hour", "10 Min", "Minute"];
+    const birthDate = state.jatakView.dateTimeLabel || "-";
+    return `
+      <div class="modal-backdrop">
+        <section class="kundali-modal transit-gochar-modal" role="dialog" aria-modal="true" aria-label="View Gochar">
+          <div class="kundali-modal-header">
+            <h2>View Gochar</h2>
+            <button class="modal-close-button" id="closeTransitGocharModal" type="button" aria-label="${t("common.close")}">x</button>
+          </div>
+          <div class="transit-gochar-body">
+            <div class="transit-gochar-chart-wrap">
+              ${transitGocharChartHtml()}
+            </div>
+            <div class="transit-gochar-controls">
+              <div class="transit-date-stack">
+                <div class="dasha-working-date">
+                  <span>Birth Date</span>
+                  <strong>${escapeHtml(birthDate)}</strong>
+                </div>
+                <div class="dasha-working-date">
+                  <span>${t("dasha.workingDate")}</span>
+                  <strong>${escapeHtml(formatDateTime(state.transitModal.workingDate))}</strong>
+                </div>
+              </div>
+              <div class="dasha-time-options">
+                ${options
+                  .map(
+                    (option) => `
+                      <label>
+                        <input type="radio" name="transitTimeStep" value="${escapeHtml(option)}" ${option === state.transitModal.step ? "checked" : ""} />
+                        <span>${escapeHtml(option)}</span>
+                      </label>
+                    `,
+                  )
+                  .join("")}
+              </div>
+              <div class="dasha-step-buttons">
+                <button data-transit-shift="-1" type="button">-</button>
+                <button data-transit-shift="1" type="button">+</button>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function transitGocharChartHtml() {
+    if (state.transitModal.loading) return `<div class="chart-state">${t("chart.loading")}</div>`;
+    if (state.transitModal.error) return `<div class="chart-state error">${state.transitModal.errorKey ? t(state.transitModal.errorKey) : state.transitModal.error}</div>`;
+    if (!state.jatakView.d1 || !state.transitModal.data) return `<div class="chart-state">${t("chart.waiting")}</div>`;
+    const natalHouses = buildSavedChartHouses(state.jatakView.d1);
+    return `
+      <div class="transit-gochar-content">
+        ${doubleDiamondChartHtml(natalHouses, buildTransitOverNatalHouses(state.transitModal.data, nativeAscSignIndex(natalHouses)))}
+        ${transitDegreeComparisonHtml()}
+      </div>
+    `;
+  }
+
+  function nativeAscSignIndex(natalHouses) {
+    return Number(natalHouses?.[0]?.sign_index) || "";
+  }
+
+  function buildTransitOverNatalHouses(gochar, nativeAscSign) {
+    const startSign = Number(nativeAscSign) || 1;
+    const positions = gochar?.positions || {};
+    const houses = Array.from({ length: 12 }, (_, index) => ({
+      house: index + 1,
+      sign_index: ((startSign + index - 1) % 12) + 1,
+      bodies: [],
+    }));
+
+    Object.values(positions).forEach((position) => {
+      const name = position.name || position.body || "";
+      if (!shouldShowPlanet(name)) return;
+      const signIndex = Number(position.sign_index);
+      if (!signIndex) return;
+      const houseIndex = (signIndex - startSign + 12) % 12;
+      houses[houseIndex].bodies.push({
+        name,
+        degree: Number(position.degree_in_sign),
+        retrograde: position.retrograde === true,
+      });
+    });
+
+    return houses;
+  }
+
+  function doubleDiamondChartHtml(natalHouses, transitHouses) {
+    const slots = northDiamondSlots();
+    const innerScale = 0.38;
+    const innerOffset = 31;
+
+    return `
+      <div class="double-diamond-frame">
+        <svg class="double-diamond-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Transit and natal chart">
+          <g class="double-diamond-outer">
+            ${slots
+              .map((slot) => {
+                const house = transitHouses[slot.house - 1] || { sign_index: "", bodies: [] };
+                return `
+                  <g class="double-diamond-house">
+                    <polygon points="${slot.points}"></polygon>
+                    ${doubleDiamondHouseNumberHtml(slot, house.sign_index, "outer")}
+                    ${doubleDiamondBodiesHtml(slot, house.bodies, "outer", 1, 0)}
+                  </g>
+                `;
+              })
+              .join("")}
+          </g>
+          <g class="double-diamond-inner">
+            ${slots
+              .map((slot) => {
+                const house = natalHouses[slot.house - 1] || { sign_index: "", bodies: [] };
+                return `
+                  <g class="double-diamond-house">
+                    <polygon points="${transformPoints(slot.points, innerScale, innerOffset)}"></polygon>
+                    ${doubleDiamondHouseNumberHtml(slot, house.sign_index, "inner", innerScale, innerOffset)}
+                    ${doubleDiamondBodiesHtml(slot, house.bodies, "inner", innerScale, innerOffset)}
+                  </g>
+                `;
+              })
+              .join("")}
+          </g>
+        </svg>
+      </div>
+    `;
+  }
+
+  function northDiamondSlots() {
+    return [
+      { house: 1, x: 50, y: 10, points: "50,2 74,26 50,50 26,26" },
+      { house: 2, x: 25, y: 10, points: "2,2 50,2 26,26" },
+      { house: 3, x: 10, y: 25, points: "2,2 26,26 2,50" },
+      { house: 4, x: 25, y: 50, points: "2,50 26,26 50,50 26,74" },
+      { house: 5, x: 10, y: 75, points: "2,50 26,74 2,98" },
+      { house: 6, x: 25, y: 90, points: "2,98 26,74 50,98" },
+      { house: 7, x: 50, y: 90, points: "50,50 74,74 50,98 26,74" },
+      { house: 8, x: 75, y: 90, points: "50,98 74,74 98,98" },
+      { house: 9, x: 90, y: 75, points: "98,50 98,98 74,74" },
+      { house: 10, x: 75, y: 50, points: "50,50 74,26 98,50 74,74" },
+      { house: 11, x: 90, y: 25, points: "98,2 98,50 74,26" },
+      { house: 12, x: 75, y: 10, points: "50,2 98,2 74,26" },
+    ];
+  }
+
+  function transformPoints(points, scale, offset) {
+    return String(points)
+      .split(" ")
+      .map((point) => {
+        const [x, y] = point.split(",").map(Number);
+        return `${formatSvgNumber(x * scale + offset)},${formatSvgNumber(y * scale + offset)}`;
+      })
+      .join(" ");
+  }
+
+  function formatSvgNumber(value) {
+    return Number(value).toFixed(2).replace(/\.?0+$/, "");
+  }
+
+  function doubleDiamondHouseNumberHtml(slot, houseNumber, layer, scale = 1, offset = 0) {
+    const position = {
+      1: [50, 5],
+      2: [25, 5],
+      3: [7, 26],
+      4: [25, 47],
+      5: [7, 73],
+      6: [25, 93],
+      7: [50, 96],
+      8: [75, 93],
+      9: [93, 73],
+      10: [75, 47],
+      11: [93, 26],
+      12: [75, 5],
+    }[slot.house] || [slot.x, slot.y];
+    const x = position[0] * scale + offset;
+    const y = position[1] * scale + offset;
+    return `<text class="double-diamond-sign ${layer}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${houseNumber || ""}</text>`;
+  }
+
+  function doubleDiamondBodiesHtml(slot, bodies, layer, scale = 1, offset = 0) {
+    const visibleLimit = layer === "inner" ? 4 : 5;
+    const visibleBodies = bodies.slice(0, visibleLimit);
+    const overflowCount = bodies.length - visibleBodies.length;
+    const labels = overflowCount > 0 ? [...visibleBodies, `+${overflowCount}`] : visibleBodies;
+    const outerBodySlot = {
+      1: [50, 9, 1],
+      2: [22, 10, 1],
+      3: [6, 31, 1],
+      4: [22, 58, 1],
+      5: [6, 84, 1],
+      6: [22, 90, -1],
+      7: [50, 92, -1],
+      8: [78, 90, -1],
+      9: [94, 84, 1],
+      10: [78, 58, 1],
+      11: [94, 31, 1],
+      12: [78, 10, 1],
+    };
+    const innerBodySlot = {
+      1: [50, 13, 1],
+      2: [25, 14, 1],
+      3: [10, 34, 1],
+      4: [25, 56, 1],
+      5: [10, 80, 1],
+      6: [25, 86, -1],
+      7: [50, 88, -1],
+      8: [75, 86, -1],
+      9: [90, 80, 1],
+      10: [75, 56, 1],
+      11: [90, 34, 1],
+      12: [75, 14, 1],
+    };
+    const bodySlot = (layer === "outer" ? outerBodySlot : innerBodySlot)[slot.house] || [slot.x, slot.y + 4, 1];
+    const [baseX, baseY, direction] = bodySlot;
+    const step = layer === "inner" ? 4.2 : 4.9;
+
+    return labels
+      .map((body, index) => {
+        const x = baseX * scale + offset;
+        const y = (baseY + direction * index * step) * scale + offset;
+        return doubleDiamondPlanetLabelHtml(body, x, y, layer);
+      })
+      .join("");
+  }
+
+  function doubleDiamondPlanetLabelHtml(body, x, y, layer) {
+    if (typeof body === "string") {
+      return `<text class="double-diamond-planet ${layer} overflow" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${body}</text>`;
+    }
+
+    const planetName = shortPlanetName(body.name);
+    const degree = planetDegreeLabel(body.degree);
+    const colorClass = layer === "outer" ? gocharPlanetColorClass(body.name) : "planet-natal";
+    const retrogradeMark = body.retrograde ? `<tspan class="planet-degree-sup" dx="0.12" dy="-1.3">*</tspan>` : "";
+    const degreeDy = body.retrograde ? "0" : "-1.3";
+    return `
+      <text class="double-diamond-planet ${layer} ${colorClass}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">
+        <tspan>${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.3" dy="${degreeDy}">${degree}</tspan>` : ""}
+      </text>
+    `;
+  }
+
+  function transitDegreeComparisonHtml() {
+    const transitPositions = sortPlanetPositions(
+      Object.values(state.transitModal.data?.positions || {}).filter((position) => shouldShowPlanet(position.name || position.body || "")),
+    );
+    const birthPositionMap = birthPositionByPlanet();
+
+    return `
+      <aside class="transit-degree-panel" aria-label="Birth and transit degree comparison">
+        <div class="double-diamond-legend">
+          <span><i class="legend-dot transit"></i>Transit</span>
+          <span><i class="legend-dot natal"></i>Natal D1</span>
+        </div>
+        <h3>Planet Degrees</h3>
+        <table class="transit-degree-table">
+          <thead>
+            <tr>
+              <th colspan="2" class="birth-group">Birth Chart</th>
+              <th rowspan="2">Planet</th>
+              <th colspan="2" class="transit-group">Transit</th>
+            </tr>
+            <tr>
+              <th>Sign</th>
+              <th>Degree</th>
+              <th>Degree</th>
+              <th>Sign</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${transitPositions.map((position) => transitDegreeRowHtml(position, birthPositionMap)).join("")}
+          </tbody>
+        </table>
+      </aside>
+    `;
+  }
+
+  function transitDegreeRowHtml(position, birthPositionMap) {
+    const name = position.name || position.body || "";
+    const key = normalizedPlanetKey(name);
+    const birthPosition = birthPositionMap.get(key) || {};
+    const birthSign = Number(birthPosition.sign_index);
+    const transitSign = Number(position.sign_index);
+    const rowClass = transitAspectRowClass(birthPosition, position);
+    return `
+      <tr class="${rowClass}">
+        <td>${birthSign ? localizedSignName(birthSign) : "-"}</td>
+        <td>${formatDegreeDms(birthPosition.degree_in_sign)}</td>
+        <td>${localizedPlanetName(name)}</td>
+        <td>${formatDegreeDms(position.degree_in_sign)}</td>
+        <td>${transitSign ? localizedSignName(transitSign) : "-"}</td>
+      </tr>
+    `;
+  }
+
+  function birthPositionByPlanet() {
+    const map = new Map();
+    const savedPositions = state.jatakView.positions?.positions || state.jatakView.positions || {};
+    Object.values(savedPositions).forEach((position) => {
+      const key = normalizedPlanetKey(position.name || position.body || "");
+      if (!key) return;
+      map.set(key, {
+        degree_in_sign: position.degree_in_sign,
+        sign_index: position.sign_index,
+      });
+    });
+
+    Object.entries(state.jatakView.d1?.placements || {}).forEach(([name, placement]) => {
+      const key = normalizedPlanetKey(name);
+      if (!key || map.has(key)) return;
+      map.set(key, {
+        degree_in_sign: placement.degree_in_sign,
+        sign_index: placement.sign_index,
+      });
+    });
+
+    return map;
+  }
+
+  function transitAspectRowClass(birthPosition, transitPosition) {
+    const birthLongitude = zodiacLongitude(birthPosition?.sign_index, birthPosition?.degree_in_sign);
+    const transitLongitude = zodiacLongitude(transitPosition?.sign_index, transitPosition?.degree_in_sign);
+    if (!Number.isFinite(birthLongitude) || !Number.isFinite(transitLongitude)) return "";
+    const separation = circularDegreeDistance(birthLongitude, transitLongitude);
+    if (separation <= 3) return "aspect-conjunction-row";
+    if (Math.abs(separation - 180) <= 3) return "aspect-opposition-row";
+    return "";
+  }
+
+  function zodiacLongitude(signIndex, degreeInSign) {
+    const sign = Number(signIndex);
+    const degree = Number(degreeInSign);
+    if (!sign || !Number.isFinite(degree)) return NaN;
+    return ((sign - 1) * 30 + degree + 360) % 360;
+  }
+
+  function circularDegreeDistance(firstDegree, secondDegree) {
+    const difference = Math.abs((((Number(firstDegree) - Number(secondDegree)) % 360) + 360) % 360);
+    return Math.min(difference, 360 - difference);
+  }
+
+  function normalizedPlanetKey(name) {
+    const key = String(name || "").trim().toLowerCase();
+    if (["lagna", "asc", "ascendant"].includes(key)) return "lagna";
+    return key;
+  }
+
   function formatCuspValue(column, value, row = {}) {
     if (value === null || value === undefined || value === "") return "-";
     if (column === "degree_in_sign") return formatDegreeDms(value);
@@ -1095,6 +1542,8 @@
 
   function nakshatraNaadiValuesHtml(values) {
     return values
+      .slice()
+      .sort((a, b) => Number(a) - Number(b))
       .map((value) => {
         const number = Number(value);
         const colorClass = naadiRuleColorClass(number);
@@ -1137,7 +1586,7 @@
     const red = new Set((rule.red || []).map(Number));
     return planetGroups.map((group) => ({
       planet: group.planetKey || group[0]?.planet || "",
-      score: group.reduce((total, row, index) => total + scoreNaadiRow(row.values, index + 1, green, red), 0),
+      score: group.reduce((total, row, index) => total + scoreNaadiRow(row.values, index === 2 ? 4 : index + 1, green, red), 0),
     }));
   }
 
@@ -1194,6 +1643,18 @@
           </div>
         </div>
         ${dashaTimingControlsHtml(planetGroups)}
+        ${dashaActionPlaceholderHtml()}
+      </div>
+    `;
+  }
+
+  function dashaActionPlaceholderHtml() {
+    return `
+      <div class="dasha-action-placeholder">
+        <button class="dasha-action-button" data-action="view-gochar" type="button">
+          <span class="dasha-action-icon" aria-hidden="true">G</span>
+          <strong>View Gochar</strong>
+        </button>
       </div>
     `;
   }
@@ -1205,7 +1666,10 @@
       <div class="dasha-timing-panel">
         ${naadiSignificatorMessageHtml(planetGroups)}
         ${activeDashaNamesHtml()}
-        <div class="dasha-working-date"><span>${t("dasha.workingDate")}</span><strong>${escapeHtml(formatDateTime(dashaWorkingDate().toISOString()))}</strong></div>
+        <div class="dasha-working-date">
+          <span>${t("dasha.workingDate")}</span>
+          <strong>${escapeHtml(formatDateTime(dashaWorkingDate().toISOString()))} ${dashaRunningAgeHtml()}</strong>
+        </div>
         <div class="dasha-time-options">
           ${options
             .map(
