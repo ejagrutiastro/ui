@@ -4,6 +4,7 @@
   const state = {
     language: localStorage.getItem("ej_vedic_language") || "en",
     headingChoice: "home",
+    homeView: "planet-details",
     naadiView: "cusp",
     settings: {
       chart_type: "north",
@@ -21,6 +22,35 @@
       loading: false,
       error: "",
       errorKey: "",
+    },
+    hora: {
+      data: null,
+      loading: false,
+      error: "",
+      errorKey: "",
+      location: null,
+    },
+    imageModal: {
+      open: false,
+      title: "",
+      src: "",
+      mode: "",
+      activeTab: "abodes",
+    },
+    astroNotes: {
+      open: false,
+      records: [],
+      query: "",
+      selectedId: null,
+      editorText: "",
+      message: "",
+      error: "",
+      loading: false,
+      saving: false,
+      page: 1,
+      rowsPerPage: 10,
+      totalRecords: 0,
+      searchToken: 0,
     },
     jatakView: {
       active: false,
@@ -88,7 +118,7 @@
       open: false,
       data: null,
       workingDate: new Date().toISOString(),
-      step: "Day",
+      step: "Month",
       loading: false,
       error: "",
       errorKey: "",
@@ -134,6 +164,8 @@
         <section class="section section2" aria-label="section2">
           <div class="section2-icons">
             ${iconActionHtml("H", "nav.home", "", "home", "", isHomeActive())}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("P", "homeIcon.planetDetails", "", "", "planet-details", state.homeView === "planet-details") : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("H", "homeIcon.hora", "", "", "hora", state.homeView === "hora") : ""}
             ${state.headingChoice === "header" ? iconActionHtml("C", "cusp.title", "", "", "cusp-details", state.naadiView === "cusp") : ""}
             ${state.headingChoice === "header" ? iconActionHtml("N", "nav.nakshatraNaadi", "", "", "nakshatra-naadi", state.naadiView === "nakshatra") : ""}
             ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("O", "homeIcon.openKundali", "", "", "open-kundali", state.openKundali.open) : ""}
@@ -151,7 +183,7 @@
         </section>
 
         <section class="section section3" aria-label="section3">
-          <div class="vsectionlhs" aria-label="vsectionlhs"></div>
+          <div class="vsectionlhs" aria-label="vsectionlhs">${leftRailMenuHtml()}</div>
           <div class="vsectionmiddle" aria-label="vsectionmiddle">
             ${sectionMiddleHtml()}
           </div>
@@ -160,6 +192,9 @@
         ${state.kundaliForm.open ? kundaliModalHtml() : ""}
         ${state.openKundali.open ? openKundaliModalHtml() : ""}
         ${state.transitModal.open ? transitGocharModalHtml() : ""}
+        ${state.imageModal.open ? imageModalHtml() : ""}
+        ${state.astroNotes.open ? astroNotesModalHtml() : ""}
+        <div class="floating-planet-tooltip" id="floatingPlanetTooltip" hidden></div>
       </main>
     `;
 
@@ -173,6 +208,60 @@
       if (document.getElementById("headingPickerButton").disabled) return;
       document.querySelector(".choice-picker").classList.toggle("open");
     });
+
+    document.removeEventListener("click", handleDocumentClick);
+    document.addEventListener("click", handleDocumentClick);
+
+    document.getElementById("leftRailMenuButton")?.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const menu = document.querySelector(".left-rail-menu");
+      menu?.classList.toggle("open");
+      if (!menu?.classList.contains("open")) {
+        closeLeftRailSubmenus();
+      }
+    });
+
+    document.querySelectorAll(".left-rail-menu-item > button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        const item = button.closest(".left-rail-menu-item");
+        if (!item?.querySelector(".left-rail-submenu")) return;
+        const isOpen = item.classList.contains("submenu-open");
+        closeLeftRailSubmenus();
+        if (!isOpen) item.classList.add("submenu-open");
+        document.querySelector(".left-rail-menu")?.classList.add("open");
+      });
+    });
+
+    document.querySelectorAll("[data-image-modal]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openImageModal(button.dataset.imageTitle || "", button.dataset.imageModal || "");
+      });
+    });
+
+    document.querySelectorAll("[data-planets-modal]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openPlanetsInfoModal();
+      });
+    });
+
+    document.querySelectorAll("[data-astro-notes-modal]").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        event.stopPropagation();
+        openAstroNotesModal();
+      });
+    });
+
+    document.querySelectorAll("[data-planet-info-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.imageModal.activeTab = button.dataset.planetInfoTab || "abodes";
+        render();
+      });
+    });
+
+    document.getElementById("closeImageModal")?.addEventListener("click", closeImageModal);
 
     document.querySelectorAll("[data-heading-choice]").forEach((option) => {
       option.addEventListener("click", () => {
@@ -216,6 +305,15 @@
         }
         if (button.dataset.action === "view-gochar") {
           openTransitGocharModal();
+        }
+        if (button.dataset.action === "planet-details") {
+          state.homeView = "planet-details";
+          render();
+        }
+        if (button.dataset.action === "hora") {
+          state.homeView = "hora";
+          render();
+          loadHomeHora();
         }
       });
     });
@@ -267,6 +365,8 @@
       });
     });
 
+    bindPlanetTooltips();
+
     document.querySelectorAll("[data-dasha-current]").forEach((button) => {
       button.addEventListener("click", () => {
         showCurrentDasha();
@@ -288,10 +388,72 @@
 
     attachKundaliModalHandlers();
     attachOpenKundaliHandlers();
+    attachAstroNotesHandlers();
+  }
+
+  function closeLeftRailSubmenus() {
+    document.querySelectorAll(".left-rail-menu-item.submenu-open").forEach((openItem) => {
+      openItem.classList.remove("submenu-open");
+    });
+  }
+
+  function closeLeftRailMenu() {
+    document.querySelector(".left-rail-menu")?.classList.remove("open");
+    closeLeftRailSubmenus();
+  }
+
+  function handleDocumentClick(event) {
+    const railMenu = document.querySelector(".left-rail-menu");
+    if (railMenu && !railMenu.contains(event.target)) {
+      closeLeftRailMenu();
+    }
+  }
+
+  function openImageModal(title, src) {
+    if (!src) return;
+    state.imageModal = { open: true, title, src, mode: "image", activeTab: "abodes" };
+    closeLeftRailMenu();
+    render();
+  }
+
+  function openPlanetsInfoModal() {
+    state.imageModal = { open: true, title: "Planets", src: "", mode: "planets", activeTab: "abodes" };
+    closeLeftRailMenu();
+    render();
+  }
+
+  function openAstroNotesModal() {
+    state.astroNotes = {
+      ...state.astroNotes,
+      open: true,
+      records: [],
+      selectedId: null,
+      editorText: "",
+      page: 1,
+      totalRecords: 0,
+      message: "",
+      error: "",
+    };
+    closeLeftRailMenu();
+    render();
+    loadAstroNotesRecords();
+  }
+
+  function closeAstroNotesModal() {
+    state.astroNotes.open = false;
+    state.astroNotes.message = "";
+    state.astroNotes.error = "";
+    render();
+  }
+
+  function closeImageModal() {
+    state.imageModal.open = false;
+    render();
   }
 
   function resetToDefaultHome() {
     state.headingChoice = "home";
+    state.homeView = "planet-details";
     state.naadiView = "cusp";
     state.jatakView = {
       active: false,
@@ -374,8 +536,8 @@
     render();
 
     const [topResult, bottomResult, cuspsResult] = await Promise.allSettled([
-      getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/chart/${chartEndpoint(topChart)}`, "chart.loadError"),
-      getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/chart/${chartEndpoint(bottomChart)}`, "chart.loadError"),
+      getJson(jatakChartUrl(state.jatakView.jatakId, topChart), "chart.loadError"),
+      getJson(jatakChartUrl(state.jatakView.jatakId, bottomChart), "chart.loadError"),
       getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/cusps`, "cusp.loadError"),
     ]);
 
@@ -441,6 +603,7 @@
       ...state.transitModal,
       open: true,
       workingDate: state.jatakView.dasha?.workingDate || new Date().toISOString(),
+      step: "Month",
       error: "",
       errorKey: "",
     };
@@ -453,6 +616,35 @@
     render();
   }
 
+  function bindPlanetTooltips() {
+    const tooltip = document.getElementById("floatingPlanetTooltip");
+    if (!tooltip) return;
+
+    const moveTooltip = (event) => {
+      const padding = 14;
+      const rect = tooltip.getBoundingClientRect();
+      let left = event.clientX + padding;
+      let top = event.clientY + padding;
+      if (left + rect.width > window.innerWidth - 8) left = event.clientX - rect.width - padding;
+      if (top + rect.height > window.innerHeight - 8) top = event.clientY - rect.height - padding;
+      tooltip.style.left = `${Math.max(8, left)}px`;
+      tooltip.style.top = `${Math.max(8, top)}px`;
+    };
+
+    document.querySelectorAll("[data-planet-tooltip]").forEach((planet) => {
+      planet.addEventListener("mouseenter", (event) => {
+        tooltip.className = `floating-planet-tooltip ${planet.dataset.tooltipLayer === "outer" ? "gochar" : "birth"}`;
+        tooltip.innerHTML = decodeURIComponent(planet.dataset.planetTooltip || "");
+        tooltip.hidden = false;
+        moveTooltip(event);
+      });
+      planet.addEventListener("mousemove", moveTooltip);
+      planet.addEventListener("mouseleave", () => {
+        tooltip.hidden = true;
+      });
+    });
+  }
+
   async function loadTransitGochar() {
     if (!state.transitModal.open || state.transitModal.loading) return;
     state.transitModal.loading = true;
@@ -461,7 +653,7 @@
     render();
 
     try {
-      state.transitModal.data = await getJson(`/chart/gochar?at=${encodeURIComponent(state.transitModal.workingDate)}`, "chart.loadError");
+      state.transitModal.data = await getJson(gocharChartUrl(state.transitModal.workingDate), "chart.loadError");
     } catch (error) {
       state.transitModal.error = error.message || t("chart.loadError");
       state.transitModal.errorKey = error.messageKey || "chart.loadError";
@@ -469,6 +661,82 @@
       state.transitModal.loading = false;
       render();
     }
+  }
+
+  async function loadHomeHora() {
+    if (state.headingChoice !== "home" || state.jatakView.active || state.hora.loading) return;
+    state.hora.loading = true;
+    state.hora.error = "";
+    state.hora.errorKey = "";
+    render();
+
+    try {
+      const coords = await currentBrowserCoordinates();
+      const now = new Date();
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata";
+      state.hora.location = coords;
+      let horaData = await getJson(`/panchang/hora?${horaQueryParams(coords, now, timezone).toString()}`, "hora.loadError");
+      horaData = normalizeHoraCurrent(horaData, now);
+
+      if (!currentHoraFromData(horaData)) {
+        const previousDate = new Date(now);
+        previousDate.setDate(previousDate.getDate() - 1);
+        horaData = await getJson(`/panchang/hora?${horaQueryParams(coords, previousDate, timezone).toString()}`, "hora.loadError");
+        horaData = normalizeHoraCurrent(horaData, now);
+      }
+
+      state.hora.data = horaData;
+    } catch (error) {
+      state.hora.error = error.message || t("hora.loadError");
+      state.hora.errorKey = error.messageKey || "";
+    } finally {
+      state.hora.loading = false;
+      render();
+    }
+  }
+
+  function currentBrowserCoordinates() {
+    return new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error(t("hora.locationUnsupported")));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve({
+            latitude: Number(position.coords.latitude.toFixed(6)),
+            longitude: Number(position.coords.longitude.toFixed(6)),
+          });
+        },
+        () => reject(new Error(t("hora.locationDenied"))),
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 300000 },
+      );
+    });
+  }
+
+  function horaQueryParams(coords, date, timezone) {
+    return new URLSearchParams({
+      latitude: String(coords.latitude),
+      longitude: String(coords.longitude),
+      date: apiIsoDate(date),
+      time: apiTimeString(date),
+      timezone,
+    });
+  }
+
+  function normalizeHoraCurrent(data, targetDate = new Date()) {
+    const targetTime = targetDate.getTime();
+    const horas = (data?.horas || []).map((hora) => {
+      const start = new Date(hora.start_time).getTime();
+      const end = new Date(hora.end_time).getTime();
+      const isCurrent = Number.isFinite(start) && Number.isFinite(end) && targetTime >= start && targetTime < end;
+      return { ...hora, is_current_hora: isCurrent };
+    });
+    return { ...data, horas };
+  }
+
+  function currentHoraFromData(data) {
+    return (data?.horas || []).find((hora) => hora.is_current_hora);
   }
 
   async function shiftTransitGocharDate(direction) {
@@ -600,7 +868,7 @@
     const amount = Number(direction) || 1;
     const normalized = String(step || "Hour").toLowerCase();
     if (normalized === "5 years") next.setFullYear(next.getFullYear() + 5 * amount);
-    else if (normalized === "year") next.setFullYear(next.getFullYear() + amount);
+    else if (normalized === "year" || normalized === "1 year") next.setFullYear(next.getFullYear() + amount);
     else if (normalized === "month") next.setMonth(next.getMonth() + amount);
     else if (normalized === "day") next.setDate(next.getDate() + amount);
     else if (normalized === "10 min") next.setMinutes(next.getMinutes() + 10 * amount);
@@ -673,7 +941,7 @@
   }
 
   function isHeadingPickerEnabled() {
-    return Boolean(state.jatakView.active && state.jatakView.d1 && state.jatakView.d9 && !state.jatakView.loading && !state.jatakView.error);
+    return Boolean(state.headingChoice !== "header" && state.jatakView.active && state.jatakView.d1 && state.jatakView.d9 && !state.jatakView.loading && !state.jatakView.error);
   }
 
   function headerTitleText() {
@@ -705,13 +973,496 @@
   }
 
   function rightPanelTitleHtml() {
-    if (state.headingChoice !== "header") return t("chart.planetaryDetail");
+    if (state.headingChoice !== "header") return !state.jatakView.active && state.homeView === "hora" ? t("homeIcon.hora") : t("chart.planetaryDetail");
     return state.naadiView === "nakshatra" ? t("nav.nakshatraNaadi") : t("cusp.title");
   }
 
   function rightPanelBodyHtml() {
-    if (state.headingChoice !== "header") return planetaryDetailHtml();
+    if (state.headingChoice !== "header") return !state.jatakView.active && state.homeView === "hora" ? horaHtml() : planetaryDetailHtml();
     return state.naadiView === "nakshatra" ? nakshatraNaadiHtml() : cuspDetailHtml();
+  }
+
+  function leftRailMenuHtml() {
+    if (state.headingChoice !== "home") return "";
+    return `
+      <div class="left-rail-menu">
+        <button class="left-rail-menu-button" id="leftRailMenuButton" type="button" aria-label="Menu">&#8942;</button>
+        <div class="left-rail-menu-panel">
+          <div class="left-rail-menu-item">
+            <button type="button" data-planets-modal="true">Planets</button>
+          </div>
+          <div class="left-rail-menu-item">
+            <button type="button" data-astro-notes-modal="true">Astro Notes</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function astroNotesModalHtml() {
+    const notes = state.astroNotes.records;
+    const selected = state.astroNotes.records.find((note) => note.id === state.astroNotes.selectedId) || null;
+    const totalPages = Math.max(1, Math.ceil((state.astroNotes.totalRecords || notes.length) / state.astroNotes.rowsPerPage));
+    return `
+      <div class="modal-backdrop">
+        <section class="kundali-modal astro-notes-modal" role="dialog" aria-modal="true" aria-label="Astro Notes">
+          <div class="kundali-modal-header">
+            <h2>Astro Notes</h2>
+            <button class="modal-close-button" id="closeAstroNotesModal" type="button" aria-label="${t("common.close")}">x</button>
+          </div>
+          <div class="astro-notes-body">
+            <aside class="astro-notes-sidebar">
+              <div class="astro-notes-search-wrap">
+                <input id="astroNotesSearch" value="${escapeHtml(state.astroNotes.query)}" placeholder="Search notes" autocomplete="off" />
+                ${state.astroNotes.query ? astroNotesSuggestionsHtml(notes) : ""}
+              </div>
+              <button class="astro-notes-new" id="astroNotesNew" type="button">New Note</button>
+              <div class="astro-notes-list">
+                ${state.astroNotes.loading ? `<div class="astro-notes-empty">Loading notes...</div>` : notes.length ? notes.map((note) => astroNoteListItemHtml(note)).join("") : `<div class="astro-notes-empty">No notes found</div>`}
+              </div>
+              <div class="astro-notes-pagination">
+                <button type="button" data-astro-notes-page="${state.astroNotes.page - 1}" ${state.astroNotes.page <= 1 ? "disabled" : ""}>Prev</button>
+                <span>${state.astroNotes.page} / ${totalPages}</span>
+                <button type="button" data-astro-notes-page="${state.astroNotes.page + 1}" ${state.astroNotes.page >= totalPages ? "disabled" : ""}>Next</button>
+                <strong>Total: ${state.astroNotes.totalRecords || 0}</strong>
+              </div>
+            </aside>
+            <section class="astro-notes-editor">
+              <div class="astro-notes-editor-toolbar">
+                <div>
+                  <strong>${escapeHtml(selected?.title || "New Note")}</strong>
+                  <span>${selected ? escapeHtml(formatDateTimeLabel(selected.updated_at)) : "Use *Heading*, **Sub Heading**, ***Third Level***"}</span>
+                </div>
+                <div class="astro-notes-actions">
+                  <button id="astroNotesSave" type="button" ${state.astroNotes.saving ? "disabled" : ""}>${state.astroNotes.saving ? "Saving..." : "Save"}</button>
+                  <button id="astroNotesDelete" type="button" ${selected && !state.astroNotes.saving ? "" : "disabled"}>Delete</button>
+                </div>
+              </div>
+              <textarea id="astroNotesText" maxlength="12000" spellcheck="true">${escapeHtml(state.astroNotes.editorText)}</textarea>
+              <div class="astro-notes-status ${state.astroNotes.error ? "error" : ""}">
+                ${escapeHtml(state.astroNotes.error || state.astroNotes.message || "Headings are parsed by star level and saved for searching.")}
+              </div>
+            </section>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function astroNoteListItemHtml(note) {
+    const active = note.id === state.astroNotes.selectedId ? "active" : "";
+    return `
+      <button class="astro-note-list-item ${active}" type="button" data-astro-note-select="${escapeHtml(note.id)}">
+        <strong>${escapeHtml(note.title || "Untitled Note")}</strong>
+        <span>${escapeHtml(note.preview || "No content")}</span>
+      </button>
+    `;
+  }
+
+  function astroNotesSuggestionsHtml(notes) {
+    return `
+      <div class="astro-notes-suggestions">
+        ${notes.slice(0, 6).map((note) => `
+          <button type="button" data-astro-note-select="${escapeHtml(note.id)}">
+            <strong>${escapeHtml(note.title || "Untitled Note")}</strong>
+            <span>${escapeHtml(note.preview || "")}</span>
+          </button>
+        `).join("") || `<div>No matching note</div>`}
+      </div>
+    `;
+  }
+
+  function attachAstroNotesHandlers() {
+    if (!state.astroNotes.open) return;
+
+    document.getElementById("closeAstroNotesModal")?.addEventListener("click", closeAstroNotesModal);
+    document.getElementById("astroNotesSearch")?.addEventListener("input", (event) => {
+      state.astroNotes.query = event.target.value;
+      state.astroNotes.page = 1;
+      loadAstroNotesRecords(true);
+    });
+    document.getElementById("astroNotesNew")?.addEventListener("click", () => {
+      state.astroNotes.selectedId = null;
+      state.astroNotes.editorText = "";
+      state.astroNotes.query = "";
+      state.astroNotes.message = "New note ready.";
+      state.astroNotes.error = "";
+      render();
+      loadAstroNotesRecords();
+    });
+    document.getElementById("astroNotesText")?.addEventListener("input", (event) => {
+      state.astroNotes.editorText = event.target.value;
+      state.astroNotes.message = "";
+      state.astroNotes.error = "";
+    });
+    document.getElementById("astroNotesSave")?.addEventListener("click", saveAstroNote);
+    document.getElementById("astroNotesDelete")?.addEventListener("click", deleteAstroNote);
+    document.querySelectorAll("[data-astro-notes-page]").forEach((button) => {
+      button.addEventListener("click", () => {
+        if (button.disabled) return;
+        state.astroNotes.page = Math.max(1, Number(button.dataset.astroNotesPage) || 1);
+        loadAstroNotesRecords();
+      });
+    });
+    document.querySelectorAll("[data-astro-note-select]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const note = state.astroNotes.records.find((record) => record.id === button.dataset.astroNoteSelect);
+        if (!note) return;
+        await selectAstroNote(note.id);
+      });
+    });
+  }
+
+  async function loadAstroNotesRecords(restoreSearchFocus = false) {
+    if (!state.astroNotes.open) return;
+    const token = state.astroNotes.searchToken + 1;
+    state.astroNotes.searchToken = token;
+    state.astroNotes.loading = true;
+    state.astroNotes.error = "";
+    render();
+
+    try {
+      const response = await getDictionaryNotesPage();
+      if (token !== state.astroNotes.searchToken) return;
+      const normalized = normalizeDictionaryNotesList(response);
+      state.astroNotes.records = normalized.records;
+      state.astroNotes.totalRecords = normalized.totalRecords;
+      state.astroNotes.page = normalized.page || state.astroNotes.page;
+      if (state.astroNotes.selectedId && !state.astroNotes.records.some((note) => note.id === state.astroNotes.selectedId)) {
+        state.astroNotes.selectedId = null;
+        state.astroNotes.editorText = "";
+      }
+    } catch (error) {
+      state.astroNotes.error = error.message || "Unable to load notes.";
+    } finally {
+      if (token === state.astroNotes.searchToken) {
+        state.astroNotes.loading = false;
+        render();
+        if (restoreSearchFocus) {
+          const searchInput = document.getElementById("astroNotesSearch");
+          searchInput?.focus();
+          searchInput?.setSelectionRange(state.astroNotes.query.length, state.astroNotes.query.length);
+        }
+      }
+    }
+  }
+
+  async function selectAstroNote(noteId) {
+    state.astroNotes.loading = true;
+    state.astroNotes.error = "";
+    render();
+    try {
+      const note = normalizeDictionaryNote(await getJsonWithFallback(`/dictionary-notes/${encodeURIComponent(noteId)}`, `/astro-notes/${encodeURIComponent(noteId)}`, "Unable to load note."));
+      state.astroNotes.selectedId = note.id;
+      state.astroNotes.editorText = note.raw_text || "";
+      state.astroNotes.query = "";
+      state.astroNotes.message = "";
+      state.astroNotes.error = "";
+    } catch (error) {
+      state.astroNotes.error = error.message || "Unable to load note.";
+    } finally {
+      state.astroNotes.loading = false;
+      render();
+    }
+  }
+
+  async function saveAstroNote() {
+    const rawText = document.getElementById("astroNotesText")?.value || state.astroNotes.editorText || "";
+    const parsed = parseAstroNoteText(rawText);
+    if (!parsed.sections.length && !rawText.trim()) {
+      state.astroNotes.error = "Please enter note text before saving.";
+      render();
+      return;
+    }
+
+    state.astroNotes.saving = true;
+    state.astroNotes.error = "";
+    render();
+    const body = {
+      notes: rawText,
+      summary: parsed.searchText,
+    };
+
+    try {
+      const saved = state.astroNotes.selectedId
+        ? await putJsonWithFallback(`/dictionary-notes/${encodeURIComponent(state.astroNotes.selectedId)}`, `/astro-notes/${encodeURIComponent(state.astroNotes.selectedId)}`, body, "Unable to save note.")
+        : await postJsonWithFallback("/dictionary-notes", "/astro-notes", body, "Unable to save note.");
+      const note = normalizeDictionaryNote(saved);
+      state.astroNotes.selectedId = note.id;
+      state.astroNotes.editorText = note.raw_text || rawText;
+      state.astroNotes.message = "Note saved.";
+      state.astroNotes.error = "";
+      await loadAstroNotesRecords();
+    } catch (error) {
+      state.astroNotes.error = error.message || "Unable to save note.";
+    } finally {
+      state.astroNotes.saving = false;
+      render();
+    }
+  }
+
+  async function deleteAstroNote() {
+    if (!state.astroNotes.selectedId) return;
+    state.astroNotes.saving = true;
+    state.astroNotes.error = "";
+    render();
+    try {
+      await deleteJsonWithFallback(`/dictionary-notes/${encodeURIComponent(state.astroNotes.selectedId)}`, `/astro-notes/${encodeURIComponent(state.astroNotes.selectedId)}`, "Unable to delete note.");
+      state.astroNotes.selectedId = null;
+      state.astroNotes.editorText = "";
+      state.astroNotes.message = "Note deleted.";
+      await loadAstroNotesRecords();
+    } catch (error) {
+      state.astroNotes.error = error.message || "Unable to delete note.";
+    } finally {
+      state.astroNotes.saving = false;
+      render();
+    }
+  }
+
+  function getDictionaryNotesPage() {
+    const page = Math.max(1, state.astroNotes.page || 1);
+    const rows = Math.max(1, state.astroNotes.rowsPerPage || 10);
+    const query = state.astroNotes.query.trim();
+    if (query) {
+      const searchQuery = query.replace(/\s+/g, "-");
+      const path = `/dictionary-notes/search?query=${encodeURIComponent(searchQuery)}&page=${page}&records_per_page=${rows}`;
+      const fallbackPath = `/astro-notes/search?query=${encodeURIComponent(searchQuery)}&page=${page}&records_per_page=${rows}`;
+      return getJsonWithFallback(path, fallbackPath, "Unable to search notes.");
+    }
+    return getJsonWithFallback(
+      `/dictionary-notes?page=${page}&rows_per_page=${rows}`,
+      `/astro-notes?page=${page}&rows_per_page=${rows}`,
+      "Unable to load notes.",
+    );
+  }
+
+  function normalizeDictionaryNotesList(response) {
+    const records = Array.isArray(response)
+      ? response
+      : response?.items || response?.records || response?.notes || response?.dictionary_notes || [];
+    return {
+      records: records.map(normalizeDictionaryNote).filter((note) => note.id !== ""),
+      totalRecords: Number(response?.total_records ?? response?.total ?? response?.count ?? records.length) || 0,
+      page: Number(response?.page ?? state.astroNotes.page) || 1,
+    };
+  }
+
+  function normalizeDictionaryNote(note) {
+    const rawText = String(note?.raw_text ?? note?.notes ?? note?.note_text ?? "");
+    const parsed = parseAstroNoteText(rawText);
+    return {
+      ...note,
+      id: String(note?.id ?? note?.note_id ?? ""),
+      title: note?.title || parsed.title,
+      preview: note?.preview || parsed.preview || String(note?.summary || "").slice(0, 140),
+      raw_text: rawText,
+      sections: note?.sections || parsed.sections,
+      search_text: note?.search_text || note?.summary || parsed.searchText,
+      updated_at: note?.updated_at || note?.created_at || "",
+    };
+  }
+
+  async function getJsonWithFallback(path, fallbackPath, errorKey = "common.error") {
+    try {
+      return await getJson(path, errorKey);
+    } catch (error) {
+      if (fallbackPath && shouldTryFallback(error)) {
+        return getJson(fallbackPath, errorKey);
+      }
+      throw error;
+    }
+  }
+
+  async function postJsonWithFallback(path, fallbackPath, body, errorKey = "common.error") {
+    try {
+      return await postJson(path, body, errorKey);
+    } catch (error) {
+      if (fallbackPath && shouldTryFallback(error)) {
+        return postJson(fallbackPath, body, errorKey);
+      }
+      throw error;
+    }
+  }
+
+  async function putJsonWithFallback(path, fallbackPath, body, errorKey = "common.error") {
+    try {
+      return await putJson(path, body, errorKey);
+    } catch (error) {
+      if (fallbackPath && shouldTryFallback(error)) {
+        return putJson(fallbackPath, body, errorKey);
+      }
+      throw error;
+    }
+  }
+
+  async function deleteJsonWithFallback(path, fallbackPath, errorKey = "common.error") {
+    try {
+      return await deleteJson(path, errorKey);
+    } catch (error) {
+      if (fallbackPath && shouldTryFallback(error)) {
+        return deleteJson(fallbackPath, errorKey);
+      }
+      throw error;
+    }
+  }
+
+  function shouldTryFallback(error) {
+    return error?.status === 404 || error?.status === 405;
+  }
+
+  function parseAstroNoteText(rawText) {
+    const sections = [];
+    const stack = [];
+    const searchParts = [rawText];
+    let current = null;
+    const preface = [];
+
+    String(rawText || "").split(/\r?\n/).forEach((line) => {
+      const heading = parseAstroHeading(line);
+      if (heading) {
+        const node = { level: heading.level, heading: heading.text, content: "", children: [] };
+        while (stack.length && stack[stack.length - 1].level >= heading.level) {
+          stack.pop();
+        }
+        if (stack.length) {
+          stack[stack.length - 1].children.push(node);
+        } else {
+          sections.push(node);
+        }
+        stack.push(node);
+        current = node;
+        searchParts.push(heading.text);
+        return;
+      }
+
+      if (current) {
+        current.content = `${current.content}${line}\n`;
+        searchParts.push(line);
+      } else if (line.trim()) {
+        preface.push(line.trim());
+        searchParts.push(line);
+      }
+    });
+
+    trimAstroNoteSections(sections);
+    const firstHeading = firstAstroHeading(sections);
+    const title = firstHeading || preface[0] || "Untitled Note";
+    const preview = firstAstroContent(sections) || preface.join(" ") || String(rawText || "").trim().slice(0, 90);
+    return {
+      title,
+      preview: preview.slice(0, 140),
+      sections,
+      searchText: searchParts.join(" ").toLowerCase(),
+    };
+  }
+
+  function parseAstroHeading(line) {
+    const match = String(line || "").trim().match(/^(\*+)(.+?)\1$/);
+    if (!match) return null;
+    const text = match[2].trim();
+    if (!text) return null;
+    return { level: match[1].length, text };
+  }
+
+  function trimAstroNoteSections(sections) {
+    sections.forEach((section) => {
+      section.content = String(section.content || "").trim();
+      trimAstroNoteSections(section.children || []);
+    });
+  }
+
+  function firstAstroHeading(sections) {
+    for (const section of sections) {
+      if (section.heading) return section.heading;
+      const child = firstAstroHeading(section.children || []);
+      if (child) return child;
+    }
+    return "";
+  }
+
+  function firstAstroContent(sections) {
+    for (const section of sections) {
+      if (section.content) return section.content.replace(/\s+/g, " ");
+      const child = firstAstroContent(section.children || []);
+      if (child) return child;
+    }
+    return "";
+  }
+
+  function createClientId(prefix) {
+    if (window.crypto?.randomUUID) return `${prefix}_${window.crypto.randomUUID()}`;
+    return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+  }
+
+  function formatDateTimeLabel(value) {
+    if (!value) return "";
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    return date.toLocaleString("en-IN", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  function imageModalHtml() {
+    if (state.imageModal.mode === "planets") {
+      const tabs = planetInfoTabs();
+      const active = tabs.find((tab) => tab.key === state.imageModal.activeTab) || tabs[0];
+      const planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu", "Uranus", "Neptune", "Pluto"];
+      return `
+        <div class="modal-backdrop">
+          <section class="kundali-modal image-view-modal planets-info-modal" role="dialog" aria-modal="true" aria-label="Planets">
+            <div class="kundali-modal-header">
+              <h2>Planets</h2>
+              <button class="modal-close-button" id="closeImageModal" type="button" aria-label="${t("common.close")}">x</button>
+            </div>
+            <div class="planets-info-body">
+              <div class="planets-info-tabs">
+                ${tabs.map((tab) => `<button class="${tab.key === active.key ? "active" : ""}" data-planet-info-tab="${tab.key}" type="button">${tab.label}</button>`).join("")}
+              </div>
+              <div class="planets-info-content">
+                <div class="planets-info-image">
+                  <img src="${escapeHtml(active.src)}" alt="${escapeHtml(active.label)}" />
+                </div>
+                <div class="planets-placeholder">
+                  <h3>Planets</h3>
+                  <div class="planets-name-grid">
+                    ${planets.map((planet) => `<button type="button">${planet}</button>`).join("")}
+                  </div>
+                  <div class="planet-placeholder-note">Placeholder</div>
+                </div>
+              </div>
+            </div>
+          </section>
+        </div>
+      `;
+    }
+
+    return `
+      <div class="modal-backdrop">
+        <section class="kundali-modal image-view-modal" role="dialog" aria-modal="true" aria-label="${escapeHtml(state.imageModal.title)}">
+          <div class="kundali-modal-header">
+            <h2>${escapeHtml(state.imageModal.title)}</h2>
+            <button class="modal-close-button" id="closeImageModal" type="button" aria-label="${t("common.close")}">x</button>
+          </div>
+          <div class="image-view-modal-body">
+            <img src="${escapeHtml(state.imageModal.src)}" alt="${escapeHtml(state.imageModal.title)}" />
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function planetInfoTabs() {
+    return [
+      { key: "abodes", label: "Abodes", src: "./src/images/PlanetoryAbodes.jpg" },
+      { key: "colors", label: "Colors", src: "./src/images/Planets_And_Colors.jpg" },
+      { key: "tastes", label: "Tastes", src: "./src/images/Planets_Tastes.jpg" },
+    ];
   }
 
   function kundaliModalHtml() {
@@ -1029,6 +1780,53 @@
     `;
   }
 
+  function horaHtml() {
+    if (state.hora.loading) return `<div class="chart-state">${t("hora.loading")}</div>`;
+    if (state.hora.error) return `<div class="chart-state error">${state.hora.error}</div>`;
+    if (!state.hora.data) return `<div class="chart-state">${t("hora.waiting")}</div>`;
+
+    const data = state.hora.data;
+    const current = currentHoraFromData(data);
+    return `
+      <div class="hora-panel">
+        <div class="hora-summary">
+          <div><span>${t("hora.weekdayLord")}</span><strong>${planetDetailName(data.weekday_lord || data.weekday_lord_name)}</strong></div>
+          <div><span>${t("hora.currentHora")}</span><strong>${current ? planetDetailName(current.hora_lord || current.hora_lord_name) : "-"}</strong></div>
+          <div><span>${t("kundali.latitude")}</span><strong>${displayValue(data.latitude)}</strong></div>
+          <div><span>${t("kundali.longitude")}</span><strong>${displayValue(data.longitude)}</strong></div>
+        </div>
+        <div class="hora-table-wrap">
+          <table class="hora-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>${t("hora.period")}</th>
+                <th>${t("hora.lord")}</th>
+                <th>${t("hora.start")}</th>
+                <th>${t("hora.end")}</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${(data.horas || []).map(horaRowHtml).join("")}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
+  }
+
+  function horaRowHtml(hora) {
+    return `
+      <tr class="${hora.period === "night" ? "night" : "day"} ${hora.is_current_hora ? "active" : ""}">
+        <td>${displayValue(hora.overall_hora_number || hora.hora_number)}</td>
+        <td>${escapeHtml(toTitleCase(hora.period || ""))}</td>
+        <td>${planetDetailName(hora.hora_lord || hora.hora_lord_name)}</td>
+        <td>${formatTime(hora.start_time)}</td>
+        <td>${formatTime(hora.end_time)}</td>
+      </tr>
+    `;
+  }
+
   function cuspDetailHtml() {
     if (state.jatakView.cuspsLoading) {
       return `<div class="chart-state">${t("cusp.loading")}</div>`;
@@ -1069,8 +1867,8 @@
   }
 
   function transitGocharModalHtml() {
-    const options = ["Month", "Day", "Hour", "10 Min", "Minute"];
-    const birthDate = state.jatakView.dateTimeLabel || "-";
+    const options = ["5 Years", "1 Year", "Month", "Day", "Hour", "10 Min", "Minute"];
+    const birthDate = formatDisplayDateOnly(state.jatakView.dateTimeLabel) || "-";
     return `
       <div class="modal-backdrop">
         <section class="kundali-modal transit-gochar-modal" role="dialog" aria-modal="true" aria-label="View Gochar">
@@ -1090,7 +1888,7 @@
                 </div>
                 <div class="dasha-working-date">
                   <span>${t("dasha.workingDate")}</span>
-                  <strong>${escapeHtml(formatDateTime(state.transitModal.workingDate))}</strong>
+                  <strong>${escapeHtml(formatDisplayDateOnly(state.transitModal.workingDate))}</strong>
                 </div>
               </div>
               <div class="dasha-time-options">
@@ -1149,6 +1947,7 @@
       if (!signIndex) return;
       const houseIndex = (signIndex - startSign + 12) % 12;
       houses[houseIndex].bodies.push({
+        ...position,
         name,
         degree: Number(position.degree_in_sign),
         retrograde: position.retrograde === true,
@@ -1251,23 +2050,25 @@
   }
 
   function doubleDiamondBodiesHtml(slot, bodies, layer, scale = 1, offset = 0) {
+    if (layer === "outer") return doubleDiamondGroupedBodiesHtml(slot, bodies, scale, offset);
+
     const visibleLimit = layer === "inner" ? 4 : 5;
     const visibleBodies = bodies.slice(0, visibleLimit);
     const overflowCount = bodies.length - visibleBodies.length;
     const labels = overflowCount > 0 ? [...visibleBodies, `+${overflowCount}`] : visibleBodies;
     const outerBodySlot = {
-      1: [50, 9, 1],
-      2: [22, 10, 1],
-      3: [6, 31, 1],
-      4: [22, 58, 1],
-      5: [6, 84, 1],
-      6: [22, 90, -1],
-      7: [50, 92, -1],
-      8: [78, 90, -1],
-      9: [94, 84, 1],
-      10: [78, 58, 1],
-      11: [94, 31, 1],
-      12: [78, 10, 1],
+      1: [50, 11, 1],
+      2: [23, 12, 1],
+      3: [9, 38, 1],
+      4: [23, 58, 1],
+      5: [8, 82, 1],
+      6: [23, 88, -1],
+      7: [50, 90, -1],
+      8: [77, 88, -1],
+      9: [92, 82, 1],
+      10: [77, 58, 1],
+      11: [91, 38, 1],
+      12: [77, 12, 1],
     };
     const innerBodySlot = {
       1: [50, 13, 1],
@@ -1276,7 +2077,7 @@
       4: [25, 56, 1],
       5: [10, 80, 1],
       6: [25, 86, -1],
-      7: [50, 88, -1],
+      7: [46, 88, -1],
       8: [75, 86, -1],
       9: [90, 80, 1],
       10: [75, 56, 1],
@@ -1285,7 +2086,7 @@
     };
     const bodySlot = (layer === "outer" ? outerBodySlot : innerBodySlot)[slot.house] || [slot.x, slot.y + 4, 1];
     const [baseX, baseY, direction] = bodySlot;
-    const step = layer === "inner" ? 4.2 : 4.9;
+    const step = layer === "inner" ? 4.2 : 3.7;
 
     return labels
       .map((body, index) => {
@@ -1294,6 +2095,63 @@
         return doubleDiamondPlanetLabelHtml(body, x, y, layer);
       })
       .join("");
+  }
+
+  function doubleDiamondGroupedBodiesHtml(slot, bodies, scale = 1, offset = 0) {
+    const visibleLimit = 5;
+    const visibleBodies = bodies.slice(0, visibleLimit);
+    const overflowCount = bodies.length - visibleBodies.length;
+    const rows = groupedOuterPlanetRows(visibleBodies);
+    if (overflowCount > 0) {
+      if (!rows.length) rows.push([]);
+      rows[rows.length - 1].push(`+${overflowCount}`);
+    }
+    const bodySlot = {
+      1: [50, 12, 1],
+      2: [24, 13, 1],
+      3: [11, 29, 1],
+      4: [24, 59, 1],
+      5: [11, 81, 1],
+      6: [24, 87, -1],
+      7: [50, 89, -1],
+      8: [76, 87, -1],
+      9: [89, 81, 1],
+      10: [76, 59, 1],
+      11: [84, 28, 1],
+      12: [76, 13, 1],
+    }[slot.house] || [slot.x, slot.y + 4, 1];
+    const [baseX, baseY, direction] = bodySlot;
+    const step = 3.45;
+
+    return rows
+      .filter((row) => row.length)
+      .map((row, rowIndex) => {
+        const x = baseX * scale + offset;
+        const y = (baseY + direction * rowIndex * step) * scale + offset;
+        return `
+          <text class="double-diamond-planet outer grouped" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">
+            ${row.map((body, index) => groupedPlanetTspanHtml(body, index)).join("")}
+          </text>
+        `;
+      })
+      .join("");
+  }
+
+  function groupedOuterPlanetRows(bodies) {
+    if (bodies.length >= 4) return [bodies.slice(0, 2), bodies.slice(2, 4), bodies.slice(4)].filter((row) => row.length);
+    if (bodies.length === 3) return [bodies.slice(0, 2), bodies.slice(2)];
+    if (bodies.length === 2) return [[bodies[0]], [bodies[1]]];
+    return bodies.length ? [bodies] : [];
+  }
+
+  function groupedPlanetTspanHtml(body, index) {
+    const prefix = index > 0 ? `<tspan class="planet-separator">, </tspan>` : "";
+    if (typeof body === "string") return `${prefix}<tspan class="double-diamond-planet-part overflow">${body}</tspan>`;
+    const planetName = shortPlanetName(body.name);
+    const degree = planetDegreeLabel(body.degree);
+    const colorClass = gocharPlanetColorClass(body.name);
+    const tooltip = encodeURIComponent(planetTooltipHtml(body, "outer"));
+    return `${prefix}<tspan class="double-diamond-planet-part ${colorClass}" data-planet-tooltip="${tooltip}" data-tooltip-layer="outer">${planetName}${degree ? `<tspan class="planet-degree-sup" dx="0.15" dy="-1.05">${degree}</tspan>` : ""}</tspan>`;
   }
 
   function doubleDiamondPlanetLabelHtml(body, x, y, layer) {
@@ -1306,11 +2164,124 @@
     const colorClass = layer === "outer" ? gocharPlanetColorClass(body.name) : "planet-natal";
     const retrogradeMark = body.retrograde ? `<tspan class="planet-degree-sup" dx="0.12" dy="-1.3">*</tspan>` : "";
     const degreeDy = body.retrograde ? "0" : "-1.3";
+    const tooltip = encodeURIComponent(planetTooltipHtml(body, layer));
     return `
-      <text class="double-diamond-planet ${layer} ${colorClass}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">
-        <tspan>${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.3" dy="${degreeDy}">${degree}</tspan>` : ""}
-      </text>
+      <g class="planet-tooltip-host">
+        <text class="double-diamond-planet ${layer} ${colorClass}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}" data-planet-tooltip="${tooltip}" data-tooltip-layer="${layer}">
+          <tspan>${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.3" dy="${degreeDy}">${degree}</tspan>` : ""}
+        </text>
+      </g>
     `;
+  }
+
+  function planetTooltipHtml(body, layer) {
+    const details = layer === "outer" ? body : birthPositionByPlanet().get(normalizedPlanetKey(body.name)) || body;
+    const title = layer === "outer" ? "Transit" : "Birth Chart";
+    return `
+      <strong>${escapeHtml(title)}: ${escapeHtml(localizedPlanetName(details.name || details.body || body.name))}</strong>
+      <span>${escapeHtml(signDetailName(details.sign_index))} ${escapeHtml(formatDegreeDms(details.degree_in_sign ?? details.degree))}</span>
+      <span>Nak: ${escapeHtml(nakshatraDetailName(details.nakshatra))}</span>
+      <span>Lord: ${escapeHtml(planetDetailName(details.nakshatra_lord || details.nakshatra_swami || details.star_lord || nakshatraLordFromDetails(details)))}</span>
+      <span>Sub: ${escapeHtml(planetDetailName(details.sub_lord || details.subLord || details.sub_lord_name || subLordFromDetails(details)))}</span>
+    `;
+  }
+
+  function planetDetailName(value) {
+    if (value === null || value === undefined || value === "") return "-";
+    return localizedPlanetFullName(value);
+  }
+
+  function nakshatraLordFromDetails(details) {
+    const index = Number(details?.nakshatra_index) || nakshatraIndexFromName(details?.nakshatra);
+    if (!index) return "";
+    return vimshottariPlanetSequence()[(index - 1) % 9];
+  }
+
+  function subLordFromDetails(details) {
+    const longitude = Number(details?.longitude);
+    const fallbackLongitude = zodiacLongitude(details?.sign_index, details?.degree_in_sign ?? details?.degree);
+    const absoluteLongitude = Number.isFinite(longitude) ? longitude : fallbackLongitude;
+    if (!Number.isFinite(absoluteLongitude)) return "";
+    const nakshatraIndex = Number(details?.nakshatra_index) || Math.floor(((absoluteLongitude % 360) + 360) % 360 / (40 / 3)) + 1;
+    const lordIndex = (nakshatraIndex - 1) % 9;
+    const degreesPerNakshatra = 40 / 3;
+    const positionInNakshatra = (((absoluteLongitude % degreesPerNakshatra) + degreesPerNakshatra) % degreesPerNakshatra);
+    const totalSeconds = degreesPerNakshatra * 3600;
+    let cursor = 0;
+    const target = positionInNakshatra * 3600;
+    const sequence = vimshottariPlanetSequence();
+    const years = vimshottariPlanetYears();
+
+    for (let step = 0; step < sequence.length; step += 1) {
+      const planetIndex = (lordIndex + step) % sequence.length;
+      cursor += totalSeconds * (years[sequence[planetIndex]] / 120);
+      if (target <= cursor) return sequence[planetIndex];
+    }
+
+    return sequence[lordIndex];
+  }
+
+  function vimshottariPlanetSequence() {
+    return ["ketu", "venus", "sun", "moon", "mars", "rahu", "jupiter", "saturn", "mercury"];
+  }
+
+  function vimshottariPlanetYears() {
+    return {
+      ketu: 7,
+      venus: 20,
+      sun: 6,
+      moon: 10,
+      mars: 7,
+      rahu: 18,
+      jupiter: 16,
+      saturn: 19,
+      mercury: 17,
+    };
+  }
+
+  function nakshatraIndexFromName(name) {
+    const normalized = String(name || "").trim().toLowerCase().replace(/\s+/g, " ");
+    const names = [
+      "ashwini",
+      "bharani",
+      "krittika",
+      "rohini",
+      "mrigashira",
+      "ardra",
+      "punarvasu",
+      "pushya",
+      "ashlesha",
+      "magha",
+      "purva phalguni",
+      "uttara phalguni",
+      "hasta",
+      "chitra",
+      "swati",
+      "vishakha",
+      "anuradha",
+      "jyeshtha",
+      "mula",
+      "purva ashadha",
+      "uttara ashadha",
+      "shravana",
+      "dhanishta",
+      "shatabhisha",
+      "purva bhadrapada",
+      "uttara bhadrapada",
+      "revati",
+    ];
+    const index = names.indexOf(normalized);
+    return index >= 0 ? index + 1 : 0;
+  }
+
+  function signDetailName(value) {
+    if (value === null || value === undefined || value === "") return "-";
+    return localizedSignName(value);
+  }
+
+  function nakshatraDetailName(value) {
+    if (value === null || value === undefined || value === "") return "-";
+    return localizedNakshatraName(value);
   }
 
   function transitDegreeComparisonHtml() {
@@ -1373,6 +2344,8 @@
       const key = normalizedPlanetKey(position.name || position.body || "");
       if (!key) return;
       map.set(key, {
+        ...position,
+        name: position.name || position.body || "",
         degree_in_sign: position.degree_in_sign,
         sign_index: position.sign_index,
       });
@@ -1382,6 +2355,8 @@
       const key = normalizedPlanetKey(name);
       if (!key || map.has(key)) return;
       map.set(key, {
+        ...placement,
+        name,
         degree_in_sign: placement.degree_in_sign,
         sign_index: placement.sign_index,
       });
@@ -1848,7 +2823,7 @@
     const selectedChart = choices.chart || selectedValue;
     return `
       <div class="gochar-chart-heading saved-chart-heading">
-        ${chartMiniPickerHtml(chartKey, "chart", selectedChart, chartPickerOptions(), "chart.selectChart", true)}
+        ${chartMiniPickerHtml(chartKey, "chart", selectedChart, chartPickerOptions(), "chart.selectChart", state.headingChoice === "header")}
         <span class="chart-heading-spacer" aria-hidden="true"></span>
         ${dateTimeLabel ? `<span>${escapeHtml(dateTimeLabel)}</span>` : ""}
       </div>
@@ -2136,6 +3111,14 @@
     return code === "d1" ? "rasi" : code;
   }
 
+  function jatakChartUrl(jatakId, chartCode) {
+    return `/jatak/${encodeURIComponent(jatakId)}/chart/${chartEndpoint(chartCode)}?include_aprakashita=true`;
+  }
+
+  function gocharChartUrl(at) {
+    return `/chart/gochar?at=${encodeURIComponent(at)}&include_aprakashita=true`;
+  }
+
   async function loadHomeGocharChart() {
     if (state.headingChoice !== "home" || state.gochar.loading) return;
     state.gochar.loading = true;
@@ -2144,7 +3127,7 @@
     render();
 
     try {
-      state.gochar.data = await getJson(`/chart/gochar?at=${encodeURIComponent(new Date().toISOString())}`, "chart.loadError");
+      state.gochar.data = await getJson(gocharChartUrl(new Date().toISOString()), "chart.loadError");
     } catch (error) {
       state.gochar.error = error.message || t("chart.loadError");
       state.gochar.errorKey = error.messageKey || "chart.loadError";
@@ -2163,9 +3146,16 @@
 
     try {
       const now = new Date();
-      const date = localDateString(now);
-      const time = localTimeString(now);
-      state.panchang.data = await getJson(`/panchang?date=${encodeURIComponent(date)}&time=${encodeURIComponent(time)}`, "panchang.loadError");
+      const coords = state.hora.location || (await currentBrowserCoordinates());
+      state.hora.location = coords;
+      const params = new URLSearchParams({
+        date: apiIsoDate(now),
+        time: apiTimeString(now),
+        latitude: String(coords.latitude),
+        longitude: String(coords.longitude),
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "Asia/Kolkata",
+      });
+      state.panchang.data = await getJson(`/panchang?${params.toString()}`, "panchang.loadError");
     } catch (error) {
       state.panchang.error = error.message || t("panchang.loadError");
       state.panchang.errorKey = error.messageKey || "panchang.loadError";
@@ -2178,6 +3168,7 @@
   async function loadSavedJatakView(jatakId, dateTimeLabel, jatakName = "") {
     if (!jatakId) return;
     state.headingChoice = "home";
+    state.homeView = "planet-details";
     state.chartRotations.d1 = null;
     state.chartRotations.d9 = null;
     state.jatakView = {
@@ -2208,9 +3199,9 @@
       const topChart = state.chartHeaderChoices.d1.chart || "D1";
       const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
       const [d1, d9, positions] = await Promise.all([
-        getJson(`/jatak/${encodeURIComponent(jatakId)}/chart/${chartEndpoint(topChart)}`, "chart.loadError"),
-        getJson(`/jatak/${encodeURIComponent(jatakId)}/chart/${chartEndpoint(bottomChart)}`, "chart.loadError"),
-        getJson(`/jatak/${encodeURIComponent(jatakId)}/positions`, "chart.loadError"),
+        getJson(jatakChartUrl(jatakId, topChart), "chart.loadError"),
+        getJson(jatakChartUrl(jatakId, bottomChart), "chart.loadError"),
+        getJson(`/jatak/${encodeURIComponent(jatakId)}/positions?include_aprakashita=true`, "chart.loadError"),
       ]);
       state.jatakView.d1 = d1;
       state.jatakView.d9 = d9;
@@ -2237,7 +3228,7 @@
 
     try {
       state.jatakView[panelKey] = await getJson(
-        `/jatak/${encodeURIComponent(state.jatakView.jatakId)}/chart/${chartEndpoint(chartCode)}`,
+        jatakChartUrl(state.jatakView.jatakId, chartCode),
         "chart.loadError",
       );
     } catch (error) {
@@ -2284,6 +3275,7 @@
     if (!response.ok) {
       const error = new Error(t(errorKey));
       error.messageKey = errorKey;
+      error.status = response.status;
       throw error;
     }
     return response.json();
@@ -2298,6 +3290,7 @@
     if (!response.ok) {
       const error = new Error(t(errorKey));
       error.messageKey = errorKey;
+      error.status = response.status;
       throw error;
     }
     return response.json();
@@ -2312,6 +3305,7 @@
     if (!response.ok) {
       const error = new Error(t(errorKey));
       error.messageKey = errorKey;
+      error.status = response.status;
       throw error;
     }
     return response.json();
@@ -2322,6 +3316,7 @@
     if (!response.ok) {
       const error = new Error(t(errorKey));
       error.messageKey = errorKey;
+      error.status = response.status;
       throw error;
     }
     return true;
@@ -2856,6 +3851,11 @@
       uranus: "Uranus",
       neptune: "Neptune",
       pluto: "Pluto",
+      dhuma: "Dhuma",
+      vyatipata: "Vyatipata",
+      parivesha: "Parivesha",
+      indrachapa: "Indrachapa",
+      upaketu: "Upaketu",
     };
     if (state.language !== "mr") return englishNames[key] || toTitleCase(String(name || ""));
     return state.messages.mr[`planet.${key}`] || englishNames[key] || toTitleCase(String(name || ""));
@@ -2963,6 +3963,26 @@
     if (!value) return "";
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+  }
+
+  function formatDisplayDateOnly(value) {
+    if (!value) return "";
+    const directMatch = String(value).match(/(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
+    if (directMatch) {
+      return `${String(directMatch[1]).padStart(2, "0")}-${toTitleCase(directMatch[2]).slice(0, 3)}-${directMatch[3]}`;
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return String(value);
+    const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    return `${String(date.getDate()).padStart(2, "0")}-${months[date.getMonth()]}-${date.getFullYear()}`;
+  }
+
+  function apiIsoDate(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+  }
+
+  function apiTimeString(date) {
+    return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}:${String(date.getSeconds()).padStart(2, "0")}`;
   }
 
   function indexedValue(value, index) {
