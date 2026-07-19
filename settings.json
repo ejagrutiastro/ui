@@ -1,5 +1,7 @@
 {
   "chart_type": "north",
   "jatak_id": null,
-  "show_outer_planets": false
+  "show_outer_planets": false,
+  "show_chart_layout_button": true,
+  "show_2dchart_layout_button": true
 }

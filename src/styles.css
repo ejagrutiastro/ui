@@ -1,10 +1,16 @@
 :root {
   color: #1f2937;
   background: #ffffff;
-  font-family: Inter, "Noto Sans Devanagari", "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  font-family: "Calibri Light", Calibri, "Noto Sans Devanagari", "Nirmala UI", "Segoe UI", Arial, sans-serif;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  --warm-theme-text: #7a3f00;
+  --warm-theme-border: rgba(150, 75, 0, 0.22);
+  --warm-theme-soft: #fff8e9;
+  --warm-theme-mid: #f7dfb7;
+  --warm-theme-strong: #b66a16;
+  --warm-theme-gradient: linear-gradient(180deg, #fff8e9 0%, #f7dfb7 100%);
 }
 
 * {
@@ -44,27 +50,34 @@ select {
 }
 
 .section1 {
+  position: relative;
+  z-index: 130;
   display: grid;
   grid-template-columns: minmax(120px, 1fr) minmax(0, 1.4fr) minmax(120px, 1fr);
   align-items: center;
   gap: 16px;
-  overflow: hidden;
-  color: #ffffff;
-  background: #0f5fa8;
+  overflow: visible;
+  color: var(--warm-theme-text);
+  background: var(--warm-theme-gradient);
+  box-shadow: inset 0 -1px 0 rgba(150, 75, 0, 0.18);
 }
 
 .header-jatak-name {
+  display: grid;
+  place-items: center;
   align-self: center;
   justify-self: center;
   min-width: 0;
   max-width: 100%;
+  height: 100%;
+  min-height: 42px;
   overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.28);
-  border-radius: 999px;
-  padding: 6px 18px;
-  color: #ffffff;
-  background: rgba(255, 255, 255, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  color: var(--warm-theme-text);
+  background: transparent;
+  box-shadow: none;
   font-size: clamp(15px, 1.5vw, 20px);
   font-weight: 900;
   letter-spacing: 0;
@@ -74,6 +87,15 @@ select {
   white-space: nowrap;
 }
 
+.header-center-logo {
+  display: block;
+  width: auto;
+  height: 9.5vh;
+  max-width: 100%;
+  max-height: calc(10vh - 4px);
+  object-fit: contain;
+}
+
 .section2,
 .section3 {
   color: #1f2937;
@@ -81,11 +103,14 @@ select {
 }
 
 .section2 {
+  position: relative;
+  z-index: 90;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr) auto;
   gap: 12px;
   justify-content: stretch;
   padding: 0 24px;
+  overflow: visible;
 }
 
 .section2-icons {
@@ -94,7 +119,7 @@ select {
   justify-self: start;
   gap: 8px;
   min-width: 0;
-  overflow-x: auto;
+  overflow: visible;
   scrollbar-width: none;
 }
 
@@ -103,29 +128,94 @@ select {
 }
 
 .section2-icon-action {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 7px;
   min-height: 32px;
-  border: 1px solid rgba(15, 95, 168, 0.22);
+  border: 1px solid rgba(196, 72, 128, 0.36);
   border-radius: 999px;
   padding: 0 12px 0 8px;
-  color: #0f5fa8;
-  background: linear-gradient(180deg, #ffffff 0%, #eef6ff 100%);
-  box-shadow: 0 5px 14px rgba(15, 95, 168, 0.12);
+  color: #8a1f55;
+  background: linear-gradient(180deg, #fff7fb 0%, #f7c8dc 100%);
+  box-shadow: 0 7px 18px rgba(196, 72, 128, 0.18);
   font-weight: 800;
   white-space: nowrap;
 }
 
+.section2-icon-action.has-fancy-tooltip {
+  overflow: visible;
+}
+
+.section2-fancy-tooltip {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 50%;
+  z-index: 60;
+  display: grid;
+  gap: 5px;
+  min-width: 210px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 10px;
+  padding: 10px;
+  color: #0f172a;
+  background: linear-gradient(180deg, #ffffff 0%, #f2f8ff 100%);
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, -4px);
+  transition: opacity 0.14s ease, transform 0.14s ease;
+}
+
+.section2-fancy-tooltip::before {
+  content: "";
+  position: absolute;
+  top: -6px;
+  left: 50%;
+  width: 10px;
+  height: 10px;
+  border-top: 1px solid rgba(15, 95, 168, 0.24);
+  border-left: 1px solid rgba(15, 95, 168, 0.24);
+  background: #ffffff;
+  transform: translateX(-50%) rotate(45deg);
+}
+
+.section2-icon-action.has-fancy-tooltip:hover .section2-fancy-tooltip,
+.section2-icon-action.has-fancy-tooltip:focus-visible .section2-fancy-tooltip {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.section2-fancy-tooltip span {
+  display: grid;
+  grid-template-columns: 94px 1fr;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.section2-fancy-tooltip strong {
+  color: #0f5fa8;
+  font-size: 10px;
+  font-weight: 1000;
+}
+
+.section2-fancy-tooltip em {
+  color: #9a3412;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 950;
+}
+
 .section2-icon-action.active {
-  border-color: rgba(15, 95, 168, 0.58);
+  border-color: rgba(178, 39, 102, 0.58);
   color: #ffffff;
-  background: #0f5fa8;
-  box-shadow: 0 7px 18px rgba(15, 95, 168, 0.24);
+  background: linear-gradient(180deg, #d94c92 0%, #a81f63 100%);
+  box-shadow: 0 7px 18px rgba(178, 39, 102, 0.24);
 }
 
 .section2-icon-action.active .section2-icon-symbol {
-  color: #0f5fa8;
+  color: #a81f63;
   background: #ffffff;
 }
 
@@ -135,10 +225,17 @@ select {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  color: #ffffff;
-  background: #0f5fa8;
+  color: #a81f63;
+  background: #ffffff;
   font-size: 13px;
   line-height: 1;
+}
+
+.section2-icon-symbol img {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
 .section2-icon-text {
@@ -152,7 +249,7 @@ select {
 }
 
 .section2-icon-text span {
-  color: #667085;
+  color: #8a6072;
   font-size: 10px;
   font-weight: 700;
   line-height: 1.05;
@@ -280,6 +377,187 @@ select {
   min-width: 210px;
 }
 
+.home-section-placeholder {
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #c8ddf2;
+  padding: 10px;
+  background: #ffffff;
+}
+
+.home-section-placeholder img {
+  display: block;
+  max-width: calc(100% - 10px);
+  max-height: calc(100% - 10px);
+  object-fit: contain;
+}
+
+.current-gochar-placeholder {
+  display: grid;
+  grid-template-columns: auto minmax(360px, 1fr);
+  align-items: start;
+  justify-items: start;
+  align-content: start;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.current-gochar-chart-stack {
+  display: grid;
+  grid-template-rows: auto auto;
+  gap: 0;
+  min-width: 0;
+}
+
+.current-gochar-image-chart {
+  position: relative;
+  width: 396px;
+  max-width: calc(100% - 10px);
+  height: 271px;
+  min-height: 0;
+}
+
+.current-gochar-image-chart img,
+.current-gochar-image-chart svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.current-gochar-image-chart img {
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+
+.current-gochar-image-chart svg {
+  z-index: 1;
+}
+
+.current-gochar-image-chart .diamond-house-number {
+  fill: #000000;
+  font-size: 3.6px;
+  font-weight: 400;
+}
+
+.current-gochar-image-chart .diamond-house-body {
+  font-family: Calibri, "Noto Sans Devanagari", "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  font-size: 3.56px;
+  font-weight: 1000;
+}
+
+.current-gochar-image-chart .diamond-house-body tspan {
+  font-weight: 1000;
+}
+
+.current-gochar-image-chart .planet-degree-sup {
+  font-size: 3.56px;
+  font-weight: 1000;
+}
+
+.current-gochar-info-tile {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 7px 10px;
+  width: 396px;
+  max-width: calc(100% - 10px);
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 9px;
+  background: linear-gradient(180deg, #ffffff 0%, #f3f8ff 100%);
+  box-shadow: 0 8px 20px rgba(15, 95, 168, 0.1);
+}
+
+.current-gochar-info-tile div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.current-gochar-info-tile span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.current-gochar-info-tile strong {
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 1000;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.current-gochar-planet-tile {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+  max-height: calc(85vh - 28px);
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(15, 95, 168, 0.14);
+}
+
+.current-gochar-planet-title {
+  display: grid;
+  place-items: center;
+  align-items: center;
+  min-height: 34px;
+  padding: 0 14px;
+  color: #7a3f00;
+  background: #fff8e9;
+  box-shadow: inset 0 -1px 0 rgba(150, 75, 0, 0.18);
+  font-size: 13px;
+  font-weight: 1000;
+  font-family: Calibri, "Calibri Light", "Noto Sans Devanagari", "Nirmala UI", "Segoe UI", Arial, sans-serif;
+  letter-spacing: 0.3px;
+  text-align: center;
+}
+
+.current-gochar-planet-body {
+  min-width: 0;
+  min-height: 0;
+  overflow: visible;
+}
+
+.current-gochar-planet-body .planetary-detail-table-wrap {
+  height: auto;
+  overflow: visible;
+}
+
+.home-section-placeholder.hora-home-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: auto;
+}
+
+.home-section-placeholder.hora-home-placeholder .hora-panel {
+  width: min(900px, calc(100% - 24px));
+  height: auto;
+  max-height: calc(100% - 20px);
+}
+
+@media (max-width: 900px) {
+  .current-gochar-placeholder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .current-gochar-planet-tile {
+    max-height: none;
+  }
+}
+
 .home-middle-layout {
   display: grid;
   grid-template-columns: 30% 70%;
@@ -327,6 +605,373 @@ select {
   min-height: 0;
 }
 
+.kundali-section-placeholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #c8ddf2;
+  background: #ffffff;
+}
+
+.kundali-section-placeholder span {
+  border: 1px solid var(--warm-theme-border);
+  border-radius: 8px;
+  padding: 14px 28px;
+  color: var(--warm-theme-text);
+  background: var(--warm-theme-soft);
+  box-shadow: 0 10px 24px rgba(150, 75, 0, 0.12);
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.basic-details-section {
+  width: 29%;
+  height: calc(100% - 12px);
+  margin: 6px 0 6px 8px;
+  border: 1px solid #f0cdb6;
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-sizing: border-box;
+  box-shadow: 0 10px 24px rgba(150, 75, 0, 0.08);
+}
+
+.basic-details-title {
+  padding: 10px 14px;
+  color: #8f1d1d;
+  background: linear-gradient(180deg, #fff8e9 0%, #f7dfb7 100%);
+  border-bottom: 1px solid #efc7a0;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.basic-details-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px;
+}
+
+.basic-detail-tile {
+  min-width: 0;
+  border: 1px solid #f0cdb6;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fffdf8;
+  box-shadow: 0 8px 18px rgba(150, 75, 0, 0.08);
+}
+
+.basic-detail-tile span {
+  display: block;
+  margin-bottom: 4px;
+  color: #7d6070;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.basic-detail-tile strong {
+  display: block;
+  color: #075aa0;
+  font-size: 12px;
+  font-weight: 1000;
+  overflow-wrap: anywhere;
+}
+
+.basic-detail-tile.note-tile {
+  grid-column: span 2;
+  min-height: 92px;
+}
+
+.kundali-section-charts {
+  display: grid;
+  grid-template-columns: 396px minmax(0, 1fr);
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  border: 1px solid #c8ddf2;
+  padding: 8px 0 8px 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.kundali-section-chart-stack {
+  display: grid;
+  grid-template-rows: auto auto auto;
+  align-content: start;
+  gap: 8px;
+  width: 396px;
+  max-width: calc(100% - 8px);
+  min-width: 0;
+}
+
+.kundali-section-charts .kundali-section-chart-stack {
+  width: 360px;
+}
+
+.kundali-section-charts .kundali-image-chart {
+  width: 360px;
+  height: 246px;
+}
+
+.kundali-section-charts .kundali-birth-info-tile {
+  width: 360px;
+}
+
+.kundali-image-chart-block {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.kundali-chart-picker {
+  width: 210px;
+  max-width: 100%;
+}
+
+.kundali-chart-picker summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  align-items: center;
+  min-height: 32px;
+  padding: 5px 28px 5px 12px;
+}
+
+.kundali-chart-picker summary strong,
+.kundali-chart-picker summary em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-chart-picker.chart-mini-picker-disabled {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: center;
+  width: 148px;
+  min-height: 32px;
+  padding: 5px 14px 5px 12px;
+  cursor: default;
+}
+
+.kundali-chart-picker.chart-mini-picker-disabled strong,
+.kundali-chart-picker.chart-mini-picker-disabled em {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kundali-chart-picker.chart-mini-picker-disabled strong {
+  color: #0f5fa8;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 1000;
+}
+
+.kundali-chart-picker.chart-mini-picker-disabled em {
+  color: #667085;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.kundali-chart-picker summary strong {
+  color: #0f5fa8;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 1000;
+}
+
+.kundali-chart-picker summary em {
+  color: #667085;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 800;
+}
+
+.kundali-chart-picker .chart-mini-picker-menu button {
+  display: grid;
+  gap: 2px;
+}
+
+.kundali-chart-picker .chart-mini-picker-menu button strong {
+  font-size: 12px;
+}
+
+.kundali-chart-picker .chart-mini-picker-menu button span {
+  color: #667085;
+  font-size: 10px;
+  font-weight: 800;
+}
+
+.kundali-image-chart {
+  position: relative;
+  width: 396px;
+  max-width: 100%;
+  height: 271px;
+  min-height: 0;
+  border: 1px solid #efb338;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.kundali-image-chart img,
+.kundali-image-chart svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.kundali-image-chart img {
+  max-width: none;
+  max-height: none;
+  object-fit: contain;
+}
+
+.kundali-image-chart svg {
+  z-index: 1;
+}
+
+.kundali-image-chart .diamond-house-number {
+  fill: #000000;
+  font-size: 3.35px;
+  font-weight: 400;
+}
+
+.kundali-image-chart .diamond-house-body {
+  font-size: 3.35px;
+  font-weight: 1000;
+}
+
+.kundali-image-chart .planet-degree-sup {
+  font-size: 3.35px;
+  font-weight: 1000;
+}
+
+.kundali-birth-info-tile {
+  width: 396px;
+  max-width: 100%;
+}
+
+.kundali-section-details {
+  display: grid;
+  grid-template-rows: 28px auto;
+  gap: 10px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding-right: 10px;
+  overflow: hidden;
+}
+
+.kundali-jatak-name-badge {
+  justify-self: center;
+  width: min(760px, 100%);
+  height: 24px;
+  border: 1px solid rgba(15, 95, 168, 0.2);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: #0f5fa8;
+  background: #fff8e9;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 22px;
+  text-align: center;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.kundali-jatak-name-badge b {
+  color: #7a3f00;
+  font-weight: 1000;
+}
+
+.kundali-section-planet-details {
+  display: grid;
+  grid-template-rows: auto auto;
+  min-width: 0;
+  min-height: 0;
+  align-self: start;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+  transform: translateY(-5px);
+}
+
+.kundali-section-planet-details .current-gochar-planet-body,
+.kundali-section-planet-details .planetary-detail-table-wrap {
+  height: auto;
+  max-height: calc(100vh - 210px);
+  overflow: auto;
+}
+
+.kundali-nakshatra-section {
+  display: grid;
+  grid-template-columns: 396px minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid #c8ddf2;
+  padding: 8px 8px 8px 8px;
+  background: #ffffff;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.kundali-nakshatra-chart {
+  display: grid;
+  grid-template-rows: auto auto;
+  align-content: start;
+  gap: 8px;
+  width: 396px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.kundali-nakshatra-section .kundali-nakshatra-chart {
+  width: 360px;
+}
+
+.kundali-nakshatra-section .kundali-image-chart {
+  width: 360px;
+  height: 246px;
+}
+
+.kundali-nakshatra-section .kundali-birth-info-tile {
+  width: 360px;
+}
+
+.kundali-nakshatra-content {
+  display: grid;
+  grid-template-rows: 24px minmax(0, 1fr);
+  gap: 8px;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.kundali-nakshatra-content .nakshatra-naadi-panel {
+  grid-template-rows: auto 265px minmax(190px, auto);
+}
+
+.kundali-nakshatra-content .nakshatra-naadi-grid {
+  height: 265px;
+  overflow: hidden;
+}
+
 .home-left-bottom {
   overflow: hidden;
   background: #f8fbff;
@@ -349,7 +994,7 @@ select {
   padding: 0 12px;
   border-bottom: 2px solid #0f5fa8;
   color: #0f5fa8;
-  background: #f8fbff;
+  background: #fff8e9;
   font-size: 12px;
   font-weight: 900;
 }
@@ -536,13 +1181,13 @@ select {
 
 .nakshatra-naadi-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(180px, 1fr));
-  gap: 5px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
   width: 100%;
-  min-width: 720px;
+  max-width: 100%;
   min-height: 0;
-  padding: 0 4px 4px;
-  overflow: auto;
+  padding: 0 4px 6px;
+  overflow: visible;
 }
 
 .dasha-section {
@@ -554,7 +1199,6 @@ select {
   align-self: start;
   justify-self: start;
   width: 100%;
-  transform: translateY(-10%);
   min-height: 0;
   max-height: 100%;
   padding: 4px;
@@ -629,6 +1273,14 @@ select {
   font-size: 13px;
   font-weight: 900;
   text-align: center;
+}
+
+.dasha-heading.current-gochar-planet-title {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr) 96px;
+  min-height: 30px;
+  padding: 0 8px;
+  border-radius: 8px 8px 0 0;
 }
 
 .dasha-heading button,
@@ -821,29 +1473,34 @@ select {
   display: grid;
   align-content: start;
   gap: 4px;
+  min-height: max-content;
 }
 
 .nakshatra-naadi-table {
   width: 100%;
+  table-layout: fixed;
   height: max-content;
+  min-height: max-content;
   border-collapse: collapse;
   border: 3px solid #4c8fa5;
   color: #0f2537;
-  font-size: 14px;
+  font-size: 8px;
   font-weight: 900;
 }
 
 .nakshatra-naadi-table th,
 .nakshatra-naadi-table td {
   border: 1px solid #6faec0;
-  padding: 3px 7px;
-  line-height: 1.2;
+  padding: 3px 5px;
+  line-height: 1.24;
   text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .nakshatra-naadi-table th {
-  width: 52px;
+  width: 46px;
   color: #0f2537;
   background: wheat;
 }
@@ -851,6 +1508,111 @@ select {
 .nakshatra-naadi-table th.group-primary {
   color: #ff0000;
   font-weight: 1000;
+}
+
+.kundali-nakshatra-section .kundali-chart-picker.chart-mini-picker-disabled {
+  width: 128px !important;
+  min-width: 128px !important;
+  min-height: 20px !important;
+  height: 20px !important;
+  border-radius: 999px;
+  padding: 1px 10px !important;
+  line-height: 1 !important;
+}
+
+.kundali-nakshatra-section .kundali-chart-picker.chart-mini-picker-disabled strong {
+  font-size: 10px !important;
+  line-height: 1 !important;
+}
+
+.kundali-nakshatra-section .kundali-chart-picker.chart-mini-picker-disabled em {
+  font-size: 7px !important;
+  line-height: 1 !important;
+}
+
+.kundali-nakshatra-section .kundali-image-chart-block {
+  gap: 6px !important;
+}
+
+.kundali-nakshatra-section .nakshatra-naadi-panel {
+  grid-template-rows: auto max-content minmax(190px, auto) !important;
+  align-content: start !important;
+}
+
+.kundali-nakshatra-section .nakshatra-naadi-grid {
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  overflow: hidden !important;
+}
+
+.kundali-nakshatra-section .dasha-section {
+  transform: translateY(-5px);
+  margin-top: 5px;
+  height: 255px;
+  max-height: 255px;
+  align-items: start;
+  overflow: visible;
+}
+
+.kundali-nakshatra-section .nakshatra-naadi-table th,
+.kundali-nakshatra-section .nakshatra-naadi-table td {
+  font-size: 10px;
+  height: 23px;
+  padding-top: 4px;
+  padding-bottom: 4px;
+  line-height: 1.15;
+}
+
+.kundali-nakshatra-section .dasha-panel {
+  height: 255px;
+  max-height: 255px;
+}
+
+.kundali-nakshatra-section .dasha-table-wrap {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.kundali-nakshatra-section .dasha-table {
+  font-size: 11px;
+}
+
+.kundali-nakshatra-section .dasha-table th,
+.kundali-nakshatra-section .dasha-table td {
+  padding: 1px 6px;
+  line-height: 1.02;
+}
+
+.kundali-nakshatra-section .dasha-link {
+  padding: 2px 9px;
+}
+
+.kundali-nakshatra-section .dasha-timing-panel {
+  align-self: start;
+}
+
+.kundali-nakshatra-section .dasha-active-summary div {
+  padding: 2px 5px;
+}
+
+.kundali-nakshatra-section .dasha-time-options label {
+  min-height: 18px;
+}
+
+.kundali-nakshatra-section .dasha-step-buttons button {
+  min-height: 21px;
+}
+
+.kundali-nakshatra-section .naadi-rule-controls {
+  min-height: 31px !important;
+  padding-top: 0 !important;
+  padding-bottom: 4px !important;
+}
+
+.kundali-nakshatra-section .naadi-rule-controls select {
+  min-height: 28px !important;
+  height: 28px !important;
 }
 
 .naadi-number-green {
@@ -1273,22 +2035,160 @@ select {
 }
 
 .logo-area {
+  position: relative;
   grid-column: 1;
   display: flex;
   align-items: center;
   justify-content: flex-start;
   min-width: 160px;
   height: 100%;
-  overflow: hidden;
+  padding-left: 54px;
+  overflow: visible;
 }
 
-.logo-area img {
+.site-logo-image {
   display: block;
   width: auto;
   max-width: 112px;
-  height: 100%;
-  max-height: 100%;
+  height: calc(100% - 10px);
+  max-height: calc(10vh - 10px);
   object-fit: contain;
+}
+
+.header-menu-button {
+  position: absolute;
+  top: 50%;
+  left: 4px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--warm-theme-border);
+  border-radius: 8px;
+  padding: 5px;
+  background: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(150, 75, 0, 0.12);
+  transform: translateY(-50%);
+}
+
+.header-menu-button:hover,
+.header-menu-button[aria-expanded="true"] {
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.header-menu-button img {
+  width: 22px;
+  height: 22px;
+  max-width: 22px;
+  max-height: 22px;
+  object-fit: contain;
+}
+
+.header-active-menu-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 30px;
+  max-width: 190px;
+  border: 1px solid var(--warm-theme-border);
+  border-radius: 999px;
+  padding: 0 14px;
+  color: var(--warm-theme-text);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 4px 12px rgba(150, 75, 0, 0.1);
+  font-size: 9px;
+  font-weight: 1000;
+  line-height: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.header-active-menu-label img {
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  object-fit: cover;
+  flex: 0 0 auto;
+}
+
+.header-active-menu-label strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.12;
+}
+
+.header-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 24px;
+  z-index: 120;
+  display: grid;
+  gap: 6px;
+  min-width: 190px;
+  border: 1px solid var(--warm-theme-border);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  box-shadow: 0 16px 34px rgba(15, 23, 42, 0.22);
+}
+
+.header-menu-panel button {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  width: 100%;
+  border: 1px solid var(--warm-theme-border);
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: var(--warm-theme-text);
+  background: var(--warm-theme-soft);
+  cursor: pointer;
+  text-align: left;
+}
+
+.header-menu-panel button:nth-child(1) {
+  border-color: rgba(194, 24, 91, 0.18);
+  background: linear-gradient(180deg, #fff2f8 0%, #ffd6e7 100%);
+}
+
+.header-menu-panel button:nth-child(2) {
+  border-color: rgba(150, 75, 0, 0.18);
+  background: linear-gradient(180deg, #fff8e9 0%, #f7dfb7 100%);
+}
+
+.header-menu-panel button:hover {
+  color: #ffffff;
+  background: var(--warm-theme-strong);
+}
+
+.header-menu-panel button > img {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  object-fit: cover;
+  box-shadow: 0 2px 7px rgba(15, 23, 42, 0.16);
+}
+
+.header-menu-symbol {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: var(--warm-theme-strong);
+  font-size: 13px;
+  font-weight: 1000;
+  line-height: 1;
+}
+
+.header-menu-panel strong {
+  font-size: 13px;
+  font-weight: 1000;
 }
 
 .language-picker {
@@ -1404,7 +2304,7 @@ select {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 1000;
   display: grid;
   place-items: center;
   padding: 18px;
@@ -1429,10 +2329,213 @@ select {
   max-height: none;
 }
 
+.new-kundali-modal {
+  transform: translateY(5vh);
+}
+
+.new-kundali-modal,
+.open-kundali-modal {
+  border-color: var(--warm-theme-border);
+}
+
+.new-kundali-modal .kundali-modal-header,
+.open-kundali-modal .kundali-modal-header {
+  color: var(--warm-theme-text);
+  background: var(--warm-theme-gradient);
+  box-shadow: inset 0 -1px 0 rgba(150, 75, 0, 0.16);
+}
+
+.new-kundali-modal .modal-close-button,
+.open-kundali-modal .modal-close-button {
+  border-color: rgba(150, 75, 0, 0.24);
+  color: var(--warm-theme-text);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.new-kundali-modal .primary-modal-button,
+.open-kundali-modal .primary-modal-button {
+  color: #ffffff;
+  background: var(--warm-theme-strong);
+}
+
+.new-kundali-modal .secondary-modal-button,
+.open-kundali-modal .secondary-modal-button,
+.open-kundali-modal .open-kundali-footer button {
+  border-color: var(--warm-theme-border);
+  color: var(--warm-theme-text);
+  background: #ffffff;
+}
+
+.new-kundali-modal .gender-field label {
+  border-color: var(--warm-theme-border);
+  background: var(--warm-theme-gradient);
+  box-shadow: 0 5px 14px rgba(150, 75, 0, 0.09);
+}
+
+.new-kundali-modal .gender-field input {
+  accent-color: var(--warm-theme-strong);
+}
+
+.new-kundali-modal .kundali-form input[readonly],
+.open-kundali-modal .open-kundali-toolbar,
+.open-kundali-modal .open-kundali-edit {
+  background: var(--warm-theme-soft);
+}
+
+.open-kundali-modal .open-kundali-table th {
+  color: #ffffff;
+  background: var(--warm-theme-strong);
+}
+
+.open-kundali-modal .open-kundali-table tbody tr:nth-child(even) {
+  background: var(--warm-theme-soft);
+}
+
 .image-view-modal {
   width: min(980px, calc(100vw - 36px));
   height: min(760px, calc(100vh - 36px));
   max-height: none;
+}
+
+.chart-layout-modal {
+  width: min(980px, calc(100vw - 36px));
+  height: min(720px, calc(100vh - 36px));
+  max-height: none;
+}
+
+.two-d-chart-layout-modal {
+  width: min(1240px, calc(100vw - 36px));
+}
+
+.chart-layout-body {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) 96px;
+  gap: 10px;
+  min-height: 0;
+  padding: 12px;
+  background: #f8fbff;
+  overflow: hidden;
+}
+
+.chart-layout-toolbar {
+  display: flex;
+  gap: 10px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+
+.chart-layout-toolbar label {
+  display: grid;
+  gap: 3px;
+  color: #0f5fa8;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.chart-layout-toolbar select,
+.chart-layout-toolbar button {
+  min-height: 30px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #0f5fa8;
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.chart-layout-workspace {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-height: 0;
+}
+
+.chart-layout-workspace section {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+}
+
+.chart-layout-workspace h3 {
+  margin: 0 0 6px;
+  color: #0f5fa8;
+  font-size: 13px;
+}
+
+.chart-layout-editor-frame,
+.chart-layout-workspace .north-diamond-chart {
+  width: 100%;
+  height: 100%;
+  min-height: 320px;
+}
+
+.chart-layout-editor-frame {
+  position: relative;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+.chart-layout-editor-image,
+.chart-layout-editor-chart {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.chart-layout-editor-image {
+  object-fit: fill;
+}
+
+.chart-layout-editor-chart {
+  z-index: 1;
+}
+
+.chart-layout-editor-house polygon {
+  fill: rgba(255, 255, 255, 0.01);
+  stroke: #0f5fa8;
+  stroke-width: 0.35;
+}
+
+.chart-layout-editor-house.selected polygon {
+  fill: rgba(255, 248, 225, 0.32);
+}
+
+.chart-layout-sign-marker {
+  fill: #ff0000;
+}
+
+.chart-layout-planet-marker {
+  fill: #0f5fa8;
+  opacity: 0.62;
+}
+
+.chart-layout-planet-marker.selected {
+  fill: #006400;
+  opacity: 1;
+}
+
+.chart-layout-editor-house text {
+  fill: #ff0000;
+  font-size: 4px;
+  font-weight: 900;
+  text-anchor: middle;
+}
+
+#chartLayoutExportText {
+  width: 100%;
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 8px;
+  color: #0f172a;
+  background: #ffffff;
+  font: 700 11px/1.35 Consolas, monospace;
+  resize: none;
 }
 
 .image-view-modal-body {
@@ -1557,9 +2660,176 @@ select {
   font-weight: 800;
 }
 
+.panchang-info-placeholder {
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  min-height: 0;
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 20px;
+  background: #ffffff;
+  text-align: center;
+}
+
+.panchang-info-modal {
+  width: min(1380px, calc(100vw - 18px));
+  height: min(860px, calc(100vh - 18px));
+}
+
+.panchang-info-modal .planets-info-body {
+  padding: 8px;
+}
+
+.panchang-info-modal .panchang-info-placeholder {
+  padding: 6px;
+  place-items: start center;
+  align-content: start;
+  overflow: auto;
+}
+
+.panchang-info-placeholder h3 {
+  margin: 0;
+  color: #0f5fa8;
+  font-size: 20px;
+  font-weight: 1000;
+}
+
+.panchang-info-placeholder p {
+  margin: 0;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.panchang-info-placeholder img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  min-width: 980px;
+  object-fit: initial;
+}
+
+.panchang-yog-table-panel {
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
+  gap: 8px;
+  min-height: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.panchang-yog-table-panel h3 {
+  margin: 0;
+  color: #0f5fa8;
+  font-size: 20px;
+  font-weight: 1000;
+  text-align: center;
+}
+
+.panchang-yog-table-wrap {
+  min-height: 0;
+  overflow: auto;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 8px;
+  background: #ffffff;
+}
+
+.panchang-yog-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.panchang-yog-table th,
+.panchang-yog-table td {
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  padding: 5px 7px;
+  color: #102033;
+  font-weight: 800;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.panchang-yog-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #0f5fa8;
+  color: #ffffff;
+  font-weight: 1000;
+}
+
+.panchang-yog-table tbody tr:nth-child(even) td {
+  background: #f3f8fd;
+}
+
+.panchang-yog-table tbody tr:nth-child(odd) td {
+  background: #ffffff;
+}
+
+.panchang-yog-table tr.bad-yog td {
+  color: #ff0000;
+}
+
+.panchang-nakshatra-table-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.panchang-nakshatra-filters {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(130px, 1fr));
+  gap: 8px;
+  align-items: end;
+}
+
+.panchang-nakshatra-filters label {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.panchang-nakshatra-filters span {
+  color: #0f5fa8;
+  font-size: 11px;
+  font-weight: 1000;
+}
+
+.panchang-nakshatra-filters select {
+  width: 100%;
+  min-width: 0;
+  height: 32px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 0 10px;
+  color: #0f172a;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  outline: none;
+}
+
+.panchang-nakshatra-filters select:focus {
+  border-color: #0f5fa8;
+  box-shadow: 0 0 0 3px rgba(15, 95, 168, 0.12);
+}
+
+.panchang-nakshatra-table td:nth-child(1),
+.panchang-nakshatra-table td:nth-child(4) {
+  text-align: center;
+}
+
+.panchang-info-error {
+  color: #ff0000 !important;
+}
+
 .astro-notes-modal {
   width: min(1120px, calc(100vw - 36px));
-  height: min(760px, calc(100vh - 36px));
+  height: auto;
   max-height: none;
 }
 
@@ -1571,6 +2841,758 @@ select {
   padding: 12px;
   background: #f8fbff;
   overflow: hidden;
+}
+
+.astro-notes-placeholder-shell {
+  position: relative;
+  display: block;
+  min-height: 0;
+  height: auto;
+  background: #f8fbff;
+  overflow: hidden;
+}
+
+.astro-notes-placeholder {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  align-items: start;
+  height: auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.astro-notes-view-page {
+  display: grid;
+  grid-template-columns: 30% 70%;
+  height: 100%;
+  min-height: 0;
+  background: #f8fbff;
+  overflow: hidden;
+}
+
+.astro-notes-view-left,
+.astro-notes-view-right {
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.astro-notes-view-left {
+  display: grid;
+  grid-template-rows: auto auto auto minmax(0, 1fr);
+  gap: 8px;
+  border-right: 2px solid #0f5fa8;
+  padding: 10px;
+  overflow: hidden;
+}
+
+.astro-notes-view-right {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.astro-notes-view-search input {
+  width: 100%;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #0f172a;
+  font-weight: 800;
+  outline: none;
+}
+
+.astro-notes-view-search input:focus {
+  border-color: #0f5fa8;
+  box-shadow: 0 0 0 3px rgba(15, 95, 168, 0.12);
+}
+
+.astro-notes-view-chart-wrap {
+  display: grid;
+  place-items: start center;
+  min-height: 0;
+}
+
+.astro-notes-view-chart {
+  width: min(100%, 260px);
+  aspect-ratio: 1 / 1;
+}
+
+.astro-notes-view-house polygon {
+  fill: #ffffff;
+  stroke: #0f5fa8;
+  stroke-width: 0.7;
+}
+
+.astro-notes-view-house text {
+  fill: #ff0000;
+  font-size: 5px;
+  font-weight: 400;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.astro-notes-view-table-tools {
+  display: flex;
+  justify-content: flex-end;
+  min-height: 0;
+}
+
+.astro-notes-view-table-tools label {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.astro-notes-view-table-tools select {
+  min-width: 72px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: #0f172a;
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.astro-notes-view-table-wrap {
+  height: 293px;
+  min-height: 293px;
+  max-height: 293px;
+  overflow: hidden;
+}
+
+.astro-notes-view-table th:nth-child(1),
+.astro-notes-view-table td:nth-child(1),
+.astro-notes-view-table th:nth-child(3),
+.astro-notes-view-table td:nth-child(3) {
+  width: 48px;
+  text-align: center;
+}
+
+.astro-notes-view-table td:nth-child(2) strong {
+  display: block;
+  max-width: 430px;
+  overflow: hidden;
+  color: #0f172a;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astro-notes-view-table td:nth-child(4) {
+  max-width: 280px;
+  color: #0f5fa8;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astro-notes-view-table tbody tr[data-astro-note-row] {
+  cursor: pointer;
+}
+
+.astro-notes-view-table tbody tr[data-astro-note-row]:hover {
+  background: #eaf4ff;
+}
+
+.astro-notes-view-pagination {
+  display: grid;
+  grid-template-columns: 1fr auto auto auto 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  white-space: nowrap;
+}
+
+.astro-notes-view-pagination #astroNotesPrev {
+  grid-column: 2;
+}
+
+.astro-notes-view-pagination strong {
+  grid-column: 3;
+  flex: 0 0 auto;
+  color: #0f5fa8;
+  font-size: 12px;
+  text-align: center;
+}
+
+.astro-notes-view-pagination #astroNotesNext {
+  grid-column: 4;
+}
+
+.astro-notes-pagination-rows {
+  grid-column: 5;
+  justify-self: end;
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 6px;
+  align-items: center;
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.astro-notes-pagination-rows select {
+  min-width: 62px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 4px 8px;
+  color: #0f172a;
+  background: #ffffff;
+  font-weight: 900;
+}
+
+.astro-notes-page-icon-button {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 6px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.astro-notes-page-icon-button img {
+  width: 16px;
+  height: 16px;
+}
+
+.astro-notes-page-icon-button:hover {
+  background: #eaf4ff;
+}
+
+.astro-notes-page-icon-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.astro-notes-placeholder-left,
+.astro-notes-placeholder-right {
+  min-width: 0;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.astro-notes-placeholder-left {
+  border-right: 2px solid #0f5fa8;
+}
+
+.astro-notes-placeholder-right {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  gap: 0;
+  align-content: start;
+  padding: 14px;
+  overflow: hidden;
+}
+
+.astro-notes-inline-table-panel {
+  display: grid;
+  grid-template-rows: 293px auto;
+  gap: 8px;
+  min-height: 0;
+  margin-top: 12px;
+  align-self: start;
+  overflow: hidden;
+}
+
+.astro-notes-blank-chart-wrap {
+  display: grid;
+  justify-items: center;
+  align-items: start;
+  align-content: start;
+  gap: 10px;
+  width: 100%;
+  min-height: 0;
+  padding: 14px 12px 12px;
+}
+
+.astro-notes-blank-chart {
+  width: 340px;
+  height: 340px;
+  max-width: 100%;
+}
+
+.astro-notes-blank-house polygon {
+  fill: #ffffff;
+  stroke: #0f5fa8;
+  stroke-width: 0.7;
+  cursor: context-menu;
+}
+
+.astro-notes-blank-house > text:not(.astro-notes-house-planets) {
+  fill: #ff0000;
+  font-size: 5px;
+  font-weight: 400;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  cursor: pointer;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.two-d-chart-layout-frame {
+  position: relative;
+  background: #ffffff;
+  width: 567px;
+  height: 448px;
+  min-width: 567px;
+  min-height: 448px;
+  max-width: 567px;
+  max-height: 448px;
+  justify-self: center;
+  align-self: start;
+}
+
+.two-d-layout-inner-text {
+  fill: #0f5fa8;
+  font-size: 2.8px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.two-d-layout-outer-text {
+  fill: #d92d20;
+  font-size: 2.8px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.astro-notes-house-planets {
+  font-size: 4px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+  pointer-events: auto;
+}
+
+.astro-notes-house-planets tspan[data-astro-remove-planet] {
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.astro-notes-planet-green {
+  fill: #008000;
+}
+
+.astro-notes-planet-red {
+  fill: #ff0000;
+}
+
+.astro-notes-planet-sun {
+  fill: goldenrod;
+}
+
+.astro-notes-planet-default,
+.astro-notes-planet-separator {
+  fill: #0f5fa8;
+}
+
+.astro-notes-planet-menu {
+  position: absolute;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(82px, 1fr));
+  gap: 4px;
+  min-width: 180px;
+  border: 1px solid rgba(15, 95, 168, 0.26);
+  border-radius: 8px;
+  padding: 6px;
+  background: #ffffff;
+  box-shadow: 0 16px 38px rgba(15, 23, 42, 0.24);
+}
+
+.astro-notes-planet-menu button {
+  border: 1px solid rgba(15, 95, 168, 0.16);
+  border-radius: 6px;
+  padding: 6px 8px;
+  color: #0f5fa8;
+  background: #f8fbff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 900;
+  text-align: left;
+}
+
+.astro-notes-planet-menu button:hover {
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.astro-notes-chart-save {
+  display: inline-grid;
+  place-items: center;
+  min-width: 112px;
+  height: 34px;
+  border: 1px solid rgba(15, 95, 168, 0.28);
+  border-radius: 999px;
+  padding: 0 16px;
+  color: #ffffff;
+  background: #0f5fa8;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 1000;
+  box-shadow: 0 8px 20px rgba(15, 95, 168, 0.2);
+}
+
+.astro-notes-chart-save:disabled {
+  opacity: 0.68;
+  cursor: default;
+}
+
+.astro-notes-new-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.astro-notes-new-search input {
+  flex: 0 1 50%;
+  width: 50%;
+  min-width: 180px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 8px 12px;
+  color: #0f172a;
+  font-weight: 800;
+  outline: none;
+}
+
+.astro-notes-search-icon {
+  position: absolute;
+  top: 5px;
+  left: 7px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0f5fa8;
+  font-size: 12px;
+  font-weight: 1000;
+  pointer-events: none;
+}
+
+.astro-notes-search-icon + input {
+  padding-left: 38px;
+}
+
+.astro-notes-filter-separator {
+  color: #0f5fa8;
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.astro-notes-placement-filter {
+  min-width: 94px;
+  max-width: 128px;
+  height: 34px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 0 8px;
+  color: #0f5fa8;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 900;
+  outline: none;
+}
+
+.astro-notes-placement-filter:disabled {
+  color: #98a2b3;
+  background: #f2f4f7;
+}
+
+.astro-notes-search-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 1px;
+  background: #eef6ff;
+}
+
+.astro-notes-search-toggle button {
+  border: 0;
+  border-radius: 999px;
+  padding: 4px 7px;
+  color: #0f5fa8;
+  background: transparent;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 950;
+  white-space: nowrap;
+}
+
+.astro-notes-search-toggle button.active {
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.astro-notes-new-search input:focus {
+  border-color: #0f5fa8;
+  box-shadow: 0 0 0 3px rgba(15, 95, 168, 0.12);
+}
+
+.astro-notes-new-search input:disabled {
+  color: #98a2b3;
+  background: #f2f4f7;
+  cursor: default;
+}
+
+.astro-notes-intellisense {
+  position: absolute;
+  top: 38px;
+  right: 0;
+  left: 0;
+  z-index: 30;
+  display: grid;
+  gap: 4px;
+  max-height: 230px;
+  overflow: auto;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 8px;
+  padding: 6px;
+  background: #ffffff;
+  box-shadow: 0 14px 34px rgba(15, 23, 42, 0.18);
+}
+
+.astro-notes-intellisense button {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 1px solid rgba(15, 95, 168, 0.14);
+  border-radius: 7px;
+  padding: 7px 9px;
+  color: #0f172a;
+  background: #f8fbff;
+  cursor: pointer;
+  text-align: left;
+}
+
+.astro-notes-intellisense button:hover {
+  border-color: rgba(15, 95, 168, 0.32);
+  background: #eaf4ff;
+}
+
+.astro-notes-intellisense strong {
+  overflow: hidden;
+  color: #0f5fa8;
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astro-notes-intellisense span {
+  overflow: hidden;
+  color: #667085;
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.astro-notes-new-actions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 12px 0;
+  margin-bottom: 0;
+}
+
+.astro-notes-icon-action {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+  height: 34px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 4px 14px 4px 5px;
+  color: #0f5fa8;
+  background: #f8fbff;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.astro-notes-icon-action span {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  color: #ffffff;
+  background: #0f5fa8;
+  font-size: 13px;
+}
+
+.astro-notes-icon-action strong {
+  font-size: 13px;
+}
+
+.astro-notes-icon-action:hover {
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.astro-notes-icon-action.active {
+  color: #ffffff;
+  background: #0f5fa8;
+  box-shadow: 0 8px 20px rgba(15, 95, 168, 0.2);
+}
+
+.astro-notes-icon-action:hover span {
+  color: #0f5fa8;
+  background: #ffffff;
+}
+
+.astro-notes-icon-action.active span {
+  color: #0f5fa8;
+  background: #ffffff;
+}
+
+.astro-notes-icon-action:disabled {
+  opacity: 0.68;
+  cursor: default;
+}
+
+.astro-notes-note-field {
+  display: grid;
+  grid-template-rows: auto 340px auto;
+  gap: 8px;
+  align-content: start;
+  align-self: start;
+  height: auto;
+}
+
+.astro-notes-note-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-height: 34px;
+}
+
+.astro-notes-note-heading span {
+  color: #0f5fa8;
+  font-size: 14px;
+  font-weight: 1000;
+}
+
+.astro-notes-heading-actions {
+  display: inline-flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.astro-notes-edit-button {
+  min-height: 32px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 999px;
+  padding: 0 12px;
+  color: #0f5fa8;
+  background: #ffffff;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 950;
+  box-shadow: 0 6px 16px rgba(15, 95, 168, 0.1);
+}
+
+.astro-notes-edit-button:hover {
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.astro-notes-edit-button:disabled {
+  opacity: 0.64;
+  cursor: default;
+}
+
+.astro-notes-note-field textarea {
+  width: 100%;
+  height: 340px;
+  min-height: 340px;
+  max-height: 340px;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-radius: 8px;
+  padding: 12px;
+  color: #0f172a;
+  background: #fcfdff;
+  font: 800 14px/1.5 "Segoe UI", Arial, sans-serif;
+  outline: none;
+  resize: none;
+}
+
+.astro-notes-note-field.add-mode {
+  grid-template-rows: auto 327px auto;
+  transform: translateY(1%);
+}
+
+.astro-notes-note-field.add-mode textarea {
+  height: 327px;
+  min-height: 327px;
+  max-height: 327px;
+}
+
+.astro-notes-note-field textarea:focus {
+  border-color: #0f5fa8;
+  box-shadow: 0 0 0 3px rgba(15, 95, 168, 0.12);
+}
+
+.astro-notes-note-footer {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  min-height: 34px;
+}
+
+.astro-notes-save-icon-button {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid rgba(15, 95, 168, 0.24);
+  border-radius: 8px;
+  padding: 5px;
+  background: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 6px 16px rgba(15, 95, 168, 0.12);
+}
+
+.astro-notes-save-icon-button img {
+  width: 20px;
+  height: 20px;
+}
+
+.astro-notes-save-icon-button:hover {
+  background: #eaf4ff;
+}
+
+.astro-notes-save-icon-button:disabled {
+  opacity: 0.64;
+  cursor: default;
+}
+
+.astro-notes-save-status {
+  min-height: 18px;
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.astro-notes-save-status.error {
+  color: #ff0000;
 }
 
 .astro-notes-sidebar,
@@ -1627,21 +3649,40 @@ select {
 .astro-notes-suggestions button,
 .astro-note-list-item {
   display: grid;
-  gap: 2px;
+  gap: 7px;
   width: 100%;
-  border: 0;
-  border-radius: 6px;
-  padding: 8px 9px;
+  border: 1px solid rgba(15, 95, 168, 0.16);
+  border-radius: 14px;
+  padding: 9px;
   color: #0f172a;
-  background: transparent;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(239, 248, 255, 0.94)),
+    radial-gradient(circle at top right, rgba(15, 95, 168, 0.12), transparent 38%);
   cursor: pointer;
   text-align: left;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.07);
 }
 
 .astro-notes-suggestions button:hover,
 .astro-note-list-item:hover,
 .astro-note-list-item.active {
-  background: #eaf4ff;
+  border-color: rgba(15, 95, 168, 0.34);
+  background:
+    linear-gradient(135deg, #ffffff, #eaf4ff),
+    radial-gradient(circle at top right, rgba(15, 95, 168, 0.16), transparent 38%);
+  transform: translateY(-1px);
+}
+
+.astro-note-list-main {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
 }
 
 .astro-notes-suggestions strong,
@@ -1660,7 +3701,7 @@ select {
 }
 
 .astro-notes-new,
-.astro-notes-actions button {
+.astro-note-bottom-actions button {
   border: 1px solid rgba(15, 95, 168, 0.24);
   border-radius: 999px;
   padding: 8px 14px;
@@ -1670,10 +3711,29 @@ select {
   font-weight: 900;
 }
 
-.astro-notes-actions button:disabled {
+.astro-note-bottom-actions button:disabled {
   color: #98a2b3;
   background: #f2f4f7;
   cursor: default;
+}
+
+.astro-note-bottom-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  border-top: 1px solid rgba(15, 95, 168, 0.14);
+  padding: 10px 12px;
+  background: #ffffff;
+}
+
+.astro-note-bottom-actions button.secondary {
+  color: #0f5fa8;
+  background: #ffffff;
+}
+
+.astro-note-bottom-actions button.danger {
+  border-color: rgba(180, 35, 24, 0.24);
+  background: #b42318;
 }
 
 .astro-notes-list {
@@ -1732,7 +3792,7 @@ select {
 
 .astro-notes-editor {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: minmax(0, 1fr) auto auto;
   overflow: hidden;
 }
 
@@ -1762,12 +3822,6 @@ select {
   font-weight: 800;
 }
 
-.astro-notes-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-
 .astro-notes-editor textarea {
   width: 100%;
   height: 100%;
@@ -1779,6 +3833,117 @@ select {
   font: 800 14px/1.55 "Segoe UI", Arial, sans-serif;
   outline: none;
   resize: none;
+}
+
+.astro-note-tile-view {
+  display: grid;
+  align-content: start;
+  grid-template-columns: 1fr;
+  gap: 9px;
+  min-height: 0;
+  padding: 10px 12px;
+  background: #f3f8fd;
+  overflow: auto;
+}
+
+.astro-note-section-tile {
+  position: relative;
+  display: grid;
+  align-content: start;
+  gap: 9px;
+  min-width: 0;
+  min-height: auto;
+  border: 1px solid rgba(255, 255, 255, 0.72);
+  border-radius: 16px;
+  padding: 13px 15px 14px 15px;
+  background: linear-gradient(135deg, #0f5fa8, #63b3ff);
+  box-shadow: 0 12px 26px rgba(21, 91, 150, 0.16);
+  overflow: hidden;
+  text-align: left;
+}
+
+.astro-note-section-tile.level-1 {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.36), transparent 16%),
+    linear-gradient(135deg, #0d5c9f, #5aaeff);
+  box-shadow: 0 12px 26px rgba(21, 91, 150, 0.2);
+}
+
+.astro-note-section-tile.level-2 {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.34), transparent 16%),
+    linear-gradient(135deg, #8a4b00, #f0ad2d);
+  box-shadow: 0 12px 26px rgba(138, 75, 0, 0.19);
+}
+
+.astro-note-section-tile.level-3 {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.34), transparent 16%),
+    linear-gradient(135deg, #04724d, #3bd49a);
+  box-shadow: 0 12px 26px rgba(4, 114, 77, 0.18);
+}
+
+.astro-note-section-tile.level-4,
+.astro-note-section-tile.level-5,
+.astro-note-section-tile.level-6 {
+  background:
+    radial-gradient(circle at 92% 10%, rgba(255, 255, 255, 0.34), transparent 16%),
+    linear-gradient(135deg, #5521a6, #b28cff);
+  box-shadow: 0 12px 26px rgba(85, 33, 166, 0.18);
+}
+
+.astro-note-card-shine {
+  position: absolute;
+  right: -34px;
+  bottom: -44px;
+  width: 136px;
+  height: 136px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.astro-note-section-heading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+  padding-right: 0;
+  text-align: left;
+}
+
+.astro-note-section-heading strong {
+  min-width: 0;
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 950;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.astro-note-section-content {
+  display: grid;
+  gap: 3px;
+  max-height: 220px;
+  padding-left: 0;
+  overflow: auto;
+  text-align: left;
+}
+
+.astro-note-section-content p {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.94);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.36;
+  overflow-wrap: anywhere;
+  text-align: left;
+}
+
+.astro-note-section-children {
+  display: grid;
+  gap: 8px;
+  padding-left: 14px;
 }
 
 .astro-notes-status {
@@ -1814,6 +3979,8 @@ select {
 
 .transit-gochar-chart-wrap {
   display: grid;
+  align-items: start;
+  justify-items: center;
   min-height: 0;
   border: 1px solid rgba(15, 95, 168, 0.22);
   border-radius: 8px;
@@ -1824,9 +3991,11 @@ select {
 .transit-gochar-content {
   display: grid;
   grid-template-columns: minmax(0, 66%) minmax(360px, 34%);
+  align-items: start;
   gap: 10px;
   min-width: 0;
   min-height: 0;
+  overflow: hidden;
 }
 
 .double-diamond-frame {
@@ -1838,6 +4007,39 @@ select {
   min-height: 0;
   padding: 4px 8px;
   background: #ffffff;
+}
+
+.two-d-transit-frame {
+  justify-self: center;
+  align-self: start;
+  width: 620px;
+  height: 490px;
+  min-width: 620px;
+  min-height: 490px;
+  max-width: 620px;
+  max-height: 490px;
+  padding: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 100% 100%;
+  overflow: hidden;
+}
+
+.two-d-transit-image,
+.two-d-transit-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.two-d-transit-image {
+  object-fit: fill;
+  z-index: 0;
+}
+
+.two-d-transit-overlay {
+  z-index: 1;
 }
 
 .double-diamond-legend {
@@ -1955,6 +4157,10 @@ select {
   height: 100%;
   min-height: 0;
   background: #ffffff;
+}
+
+.double-diamond-chart.two-d-transit-overlay {
+  background: transparent;
 }
 
 .double-diamond-house polygon {
@@ -2395,6 +4601,17 @@ select {
   border-collapse: collapse;
 }
 
+.open-kundali-table-wrap.astro-notes-view-table-wrap {
+  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: hidden;
+}
+
+.astro-notes-view-table {
+  min-width: 0;
+  table-layout: fixed;
+}
+
 .open-kundali-table th,
 .open-kundali-table td {
   border-bottom: 1px solid #edf2f7;
@@ -2500,6 +4717,43 @@ select {
   gap: 8px;
 }
 
+.open-kundali-modal .open-kundali-toolbar input,
+.open-kundali-modal .open-kundali-toolbar select,
+.open-kundali-modal .open-kundali-edit input,
+.open-kundali-modal .open-kundali-edit select,
+.open-kundali-modal .open-kundali-edit textarea,
+.new-kundali-modal .kundali-form input,
+.new-kundali-modal .kundali-form select,
+.new-kundali-modal .kundali-form textarea {
+  border-color: var(--warm-theme-border);
+}
+
+.open-kundali-modal .open-kundali-suggestions {
+  border-color: var(--warm-theme-border);
+  box-shadow: 0 18px 36px rgba(150, 75, 0, 0.18);
+}
+
+.open-kundali-modal .open-kundali-suggestions button:hover,
+.open-kundali-modal .open-kundali-actions button:hover,
+.open-kundali-modal .open-kundali-footer button:hover:not(:disabled) {
+  background: var(--warm-theme-mid);
+}
+
+.open-kundali-modal .open-kundali-suggestions strong,
+.open-kundali-modal .open-kundali-footer strong,
+.new-kundali-modal .kundali-form label span,
+.new-kundali-modal .gender-field legend,
+.open-kundali-modal .open-kundali-toolbar span,
+.open-kundali-modal .open-kundali-edit span {
+  color: var(--warm-theme-text);
+}
+
+.open-kundali-modal .open-kundali-table-wrap,
+.open-kundali-modal .open-kundali-edit,
+.open-kundali-modal .open-kundali-actions button {
+  border-color: var(--warm-theme-border);
+}
+
 @media (max-width: 640px) {
   .section {
     padding: 0 12px;
@@ -2528,7 +4782,7 @@ select {
     min-width: 104px;
   }
 
-  .logo-area img {
+  .site-logo-image {
     max-width: 92px;
   }
 
