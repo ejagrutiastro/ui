@@ -625,6 +625,313 @@ select {
   font-weight: 1000;
 }
 
+.ashtak-varga-page {
+  display: grid;
+  grid-template-rows: 30px 10% minmax(74px, auto) minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  border: 1px solid #c8ddf2;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ashtak-varga-jatak-badge {
+  grid-row: 1;
+  align-self: center;
+}
+
+.ashtak-varga-planet-strip {
+  grid-row: 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  min-width: 0;
+  min-height: 0;
+  padding: 6px 18px;
+}
+
+.ashtak-planet-button {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  width: 74px;
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 6px 4px;
+  color: #0f5fa8;
+  background: linear-gradient(180deg, #ffffff 0%, #f6fbff 100%);
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 900;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, border-color 0.14s ease;
+}
+
+.ashtak-planet-button img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  transition: transform 0.14s ease;
+}
+
+.ashtak-planet-button:hover,
+.ashtak-planet-button:focus-visible,
+.ashtak-planet-button.active {
+  border-color: rgba(196, 72, 128, 0.42);
+  box-shadow: 0 10px 22px rgba(196, 72, 128, 0.18);
+  transform: translateY(-2px);
+}
+
+.ashtak-planet-button:hover img,
+.ashtak-planet-button:focus-visible img,
+.ashtak-planet-button.active img {
+  transform: scale(1.22);
+}
+
+.ashtak-varga-workspace {
+  grid-row: 4;
+  min-width: 0;
+  min-height: 0;
+  padding: 12px 18px 18px;
+  overflow: hidden;
+}
+
+.ashtak-varga-empty {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: #667085;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.ashtak-varga-detail {
+  display: grid;
+  grid-template-columns: minmax(360px, 42%) minmax(360px, 58%);
+  gap: 18px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+
+.ashtak-varga-kundali-placeholder,
+.ashtak-varga-points-placeholder {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-width: 0;
+  min-height: 0;
+  border: 1px solid rgba(15, 95, 168, 0.2);
+  border-radius: 8px;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.ashtak-varga-chart-box {
+  position: relative;
+  align-self: start;
+  justify-self: start;
+  width: 396px;
+  height: 271px;
+  margin: 10px;
+  border: 1px solid #efb338;
+  overflow: hidden;
+}
+
+.ashtak-varga-chart-box img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.ashtak-varga-chart-box svg {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.ashtak-varga-chart-box .diamond-house-number {
+  fill: #000000;
+  font-size: 3.35px;
+  font-weight: 400;
+}
+
+.ashtak-varga-point {
+  fill: #b42318;
+  font-size: 5.4px;
+  font-weight: 1000;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ashtak-varga-point-empty {
+  fill: #667085;
+  font-size: 4px;
+  font-weight: 900;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ashtak-varga-point-badge circle {
+  stroke: #ffffff;
+  stroke-width: 0.4;
+}
+
+.ashtak-varga-point-badge text {
+  fill: #ffffff;
+  font-size: 3.4px;
+  font-weight: 1000;
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.ashtak-varga-point-badge.ashtak-point-low circle {
+  fill: #ff0000;
+}
+
+.ashtak-varga-point-badge.ashtak-point-mid circle {
+  fill: #0f5fa8;
+}
+
+.ashtak-varga-point-badge.ashtak-point-high circle {
+  fill: #006400;
+}
+
+.ashtak-varga-point.ashtak-point-low {
+  fill: #ff0000;
+}
+
+.ashtak-varga-point.ashtak-point-mid {
+  fill: #0f5fa8;
+}
+
+.ashtak-varga-point.ashtak-point-high {
+  fill: #006400;
+}
+
+.ashtak-varga-empty.error {
+  color: #b42318;
+}
+
+.ashtak-varga-json-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-content: start;
+  gap: 8px;
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+}
+
+.ashtak-varga-json-tile {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fbff 100%);
+}
+
+.ashtak-varga-json-tile span {
+  color: #667085;
+  font-size: 11px;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ashtak-varga-json-tile strong {
+  color: #0f5fa8;
+  font-size: 12px;
+  font-weight: 1000;
+  overflow-wrap: anywhere;
+}
+
+.ashtak-varga-points-table {
+  width: 100%;
+  border-collapse: collapse;
+  color: #0f2537;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ashtak-varga-points-table th {
+  padding: 7px;
+  color: #ffffff;
+  background: #0f5fa8;
+}
+
+.ashtak-varga-points-table td {
+  border: 1px solid rgba(15, 95, 168, 0.18);
+  padding: 7px;
+  text-align: center;
+}
+
+.ashtak-varga-points-table tr:nth-child(even) td {
+  background: #eef6ff;
+}
+
+.ashtak-varga-table-wrap {
+  min-width: 0;
+  min-height: 0;
+  padding: 10px;
+  overflow: auto;
+}
+
+.ashtak-varga-sign-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+  color: #0f2537;
+  font-size: 12px;
+  font-weight: 850;
+}
+
+.ashtak-varga-sign-table th,
+.ashtak-varga-sign-table td {
+  border: 1px solid rgba(15, 95, 168, 0.2);
+  padding: 6px 8px;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.ashtak-varga-sign-table thead th {
+  color: #0f2537;
+  background: wheat;
+}
+
+.ashtak-varga-sign-table tbody th {
+  color: #0f5fa8;
+  background: #fff8e9;
+  text-align: left;
+}
+
+.ashtak-varga-sign-table tbody tr:nth-child(even) td {
+  background: #eef6ff;
+}
+
+.ashtak-varga-sign-table .ashtak-point-low {
+  color: #ff0000;
+  font-weight: 1000;
+}
+
+.ashtak-varga-sign-table .ashtak-point-mid {
+  color: #0f5fa8;
+  font-weight: 1000;
+}
+
+.ashtak-varga-sign-table .ashtak-point-high {
+  color: #006400;
+  font-weight: 1000;
+}
+
 .basic-details-section {
   width: 29%;
   height: calc(100% - 12px);
@@ -715,10 +1022,6 @@ select {
 .kundali-section-charts .kundali-image-chart {
   width: 360px;
   height: 246px;
-}
-
-.kundali-section-charts .kundali-birth-info-tile {
-  width: 360px;
 }
 
 .kundali-image-chart-block {
@@ -855,11 +1158,6 @@ select {
   font-weight: 1000;
 }
 
-.kundali-birth-info-tile {
-  width: 396px;
-  max-width: 100%;
-}
-
 .kundali-section-details {
   display: grid;
   grid-template-rows: 28px auto;
@@ -948,10 +1246,6 @@ select {
 .kundali-nakshatra-section .kundali-image-chart {
   width: 360px;
   height: 246px;
-}
-
-.kundali-nakshatra-section .kundali-birth-info-tile {
-  width: 360px;
 }
 
 .kundali-nakshatra-content {
@@ -4040,6 +4334,62 @@ select {
 
 .two-d-transit-overlay {
   z-index: 1;
+  display: block;
+  background: transparent;
+}
+
+.two-d-transit-sign,
+.two-d-transit-planet {
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+.two-d-transit-sign {
+  fill: #111827;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+.two-d-transit-sign.outer {
+  font-size: 2.4px;
+}
+
+.two-d-transit-sign.inner {
+  fill: #0f5fa8;
+  font-size: 1.35px;
+}
+
+.two-d-transit-planet {
+  font-weight: 1000;
+  pointer-events: auto;
+}
+
+.two-d-transit-planet.outer {
+  font-size: 1.65px;
+}
+
+.two-d-transit-planet.inner {
+  font-size: 1.3px;
+}
+
+.two-d-transit-planet.planet-green {
+  fill: #008000;
+}
+
+.two-d-transit-planet.planet-red {
+  fill: #d92d20;
+}
+
+.two-d-transit-planet.planet-natal {
+  fill: #0f5fa8;
+}
+
+.two-d-transit-planet.overflow {
+  fill: #667085;
+}
+
+.two-d-transit-planet .planet-degree-sup {
+  font-size: 0.95px;
 }
 
 .double-diamond-legend {

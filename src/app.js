@@ -100,6 +100,7 @@
       jatakName: "",
       dateTimeLabel: "",
       d1: null,
+      rasi: null,
       d9: null,
       positions: null,
       cusps: null,
@@ -123,6 +124,13 @@
         errorKey: "",
       },
       kundaliSection: "basic-details",
+      loading: false,
+      error: "",
+      errorKey: "",
+    },
+    ashtakVarga: {
+      selectedPlanet: "",
+      data: null,
       loading: false,
       error: "",
       errorKey: "",
@@ -471,6 +479,14 @@
             loadDashaLevel("");
           }
         }
+        if (button.dataset.ashtakPlanet) {
+          state.ashtakVarga.selectedPlanet = button.dataset.ashtakPlanet;
+          state.ashtakVarga.data = null;
+          state.ashtakVarga.error = "";
+          state.ashtakVarga.errorKey = "";
+          render();
+          loadAshtakVarga(button.dataset.ashtakPlanet);
+        }
         if (button.dataset.action === "chart-layout") {
           openChartLayoutModal();
         }
@@ -642,6 +658,7 @@
       jatakName: "",
       dateTimeLabel: "",
       d1: null,
+      rasi: null,
       d9: null,
       positions: null,
       cusps: null,
@@ -716,6 +733,7 @@
     state.jatakView = {
       ...state.jatakView,
       d1: null,
+      rasi: null,
       d9: null,
       cusps: null,
       cuspsLoading: true,
@@ -727,14 +745,16 @@
     };
     render();
 
-    const [topResult, bottomResult, cuspsResult] = await Promise.allSettled([
+    const [topResult, bottomResult, rasiResult, cuspsResult] = await Promise.allSettled([
       getJson(jatakChartUrl(state.jatakView.jatakId, topChart), "chart.loadError"),
       getJson(jatakChartUrl(state.jatakView.jatakId, bottomChart), "chart.loadError"),
+      getJson(jatakChartUrl(state.jatakView.jatakId, "D1"), "chart.loadError"),
       getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/cusps`, "cusp.loadError"),
     ]);
 
     if (topResult.status === "fulfilled") state.jatakView.d1 = topResult.value;
     if (bottomResult.status === "fulfilled") state.jatakView.d9 = bottomResult.value;
+    if (rasiResult.status === "fulfilled") state.jatakView.rasi = rasiResult.value;
     if (topResult.status === "rejected" || bottomResult.status === "rejected") {
       const error = topResult.reason || bottomResult.reason || {};
       state.jatakView.error = error.message || t("chart.loadError");
@@ -790,7 +810,9 @@
     }
   }
 
-  function openTransitGocharModal() {
+  async function openTransitGocharModal() {
+    localStorage.removeItem("ej_vedic_2d_chart_layout_draft");
+    state.twoDChartLayout = await loadTwoDChartLayout();
     state.transitModal = {
       ...state.transitModal,
       open: true,
@@ -1208,14 +1230,6 @@
   }
 
   function headerCenterHtml() {
-    if (
-      state.jatakView.active &&
-      state.headerActiveMenu === "open-kundali" &&
-      ["kundali", "nakshatra-naadi"].includes(state.jatakView.kundaliSection)
-    ) {
-      return `<img class="header-center-logo" src="./src/images/logo.jpg" alt="${t("logo.alt")}" />`;
-    }
-    if (state.jatakView.active && state.jatakView.jatakName) return escapeHtml(state.jatakView.jatakName);
     return `<img class="header-center-logo" src="./src/images/logo.jpg" alt="${t("logo.alt")}" />`;
   }
 
@@ -1300,6 +1314,7 @@
     if (key === "basic-details") return basicDetailsSectionHtml();
     if (key === "kundali") return kundaliSectionChartsHtml();
     if (key === "nakshatra-naadi") return kundaliNakshatraNaadiSectionHtml();
+    if (key === "ashtak-varga") return ashtakVargaSectionHtml();
     const labelKey = {
       "dasha-system": "kundaliSection.dashaSystem",
       "kp-astrology": "kundaliSection.kpAstrology",
@@ -1310,6 +1325,289 @@
         <span>${t(labelKey)}</span>
       </div>
     `;
+  }
+
+  function ashtakVargaSectionHtml() {
+    const planets = ashtakVargaPlanets();
+    const selected = state.ashtakVarga.selectedPlanet || "";
+    return `
+      <div class="ashtak-varga-page">
+        <div class="kundali-jatak-name-badge ashtak-varga-jatak-badge">${kundaliJatakSummaryHtml()}</div>
+        <div class="ashtak-varga-planet-strip" aria-label="${t("kundaliSection.ashtakVarga")}">
+          ${planets.map((planet) => `
+            <button class="ashtak-planet-button ${selected === planet.key ? "active" : ""}" data-action="ashtak-planet" data-ashtak-planet="${escapeHtml(planet.key)}" type="button" title="${escapeHtml(ashtakPlanetLabel(planet.key))}">
+              <img src="${escapeHtml(planet.image)}" alt="${escapeHtml(ashtakPlanetLabel(planet.key))}" />
+              <span>${escapeHtml(ashtakPlanetLabel(planet.key))}</span>
+            </button>
+          `).join("")}
+        </div>
+        <div class="ashtak-varga-workspace ${selected ? "visible" : ""}">
+          ${selected ? ashtakVargaDetailHtml(selected) : `<div class="ashtak-varga-empty">${t("ashtakVarga.selectPlanet")}</div>`}
+        </div>
+      </div>
+    `;
+  }
+
+  function ashtakVargaPlanets() {
+    return [
+      ["sun", "./src/images/sun1.png"],
+      ["moon", "./src/images/moon1.jpg"],
+      ["mars", "./src/images/mars1.jpg"],
+      ["mercury", "./src/images/mercury1.jpg"],
+      ["jupiter", "./src/images/jupiter1.jpg"],
+      ["venus", "./src/images/venus1.jpg"],
+      ["saturn", "./src/images/saturn1.jpg"],
+    ].map(([key, image]) => ({ key, image }));
+  }
+
+  function ashtakPlanetLabel(planetKey) {
+    return `${t(`ashtakVarga.planet.${planetKey}`)} ${t("ashtakVarga.ashtakSuffix")}`.trim();
+  }
+
+  function ashtakVargaDetailHtml(selectedPlanet) {
+    const label = ashtakPlanetLabel(selectedPlanet);
+    if (state.ashtakVarga.loading) {
+      return `<div class="ashtak-varga-empty">${t("ashtakVarga.loading")}</div>`;
+    }
+    if (state.ashtakVarga.error) {
+      return `<div class="ashtak-varga-empty error">${state.ashtakVarga.errorKey ? t(state.ashtakVarga.errorKey) : escapeHtml(state.ashtakVarga.error)}</div>`;
+    }
+    return `
+      <div class="ashtak-varga-detail">
+        <div class="ashtak-varga-kundali-placeholder">
+          <div class="current-gochar-planet-title">${escapeHtml(label)} ${t("ashtakVarga.kundaliSuffix")}</div>
+          ${ashtakVargaChartHtml()}
+        </div>
+        <div class="ashtak-varga-points-placeholder">
+          <div class="current-gochar-planet-title">${t("ashtakVarga.pointsDetails")}</div>
+          ${ashtakVargaPointsTableHtml(state.ashtakVarga.data, selectedPlanet)}
+        </div>
+      </div>
+    `;
+  }
+
+  function ashtakVargaChartHtml() {
+    const houses = buildSavedChartHouses(state.jatakView.rasi || state.jatakView.d1 || {});
+    const pointsBySign = ashtakVargaPointsBySign(state.ashtakVarga.data);
+    const slots = northDiamondSlots();
+    return `
+      <div class="ashtak-varga-chart-box">
+        <img src="./src/images/blank_kundali.jpg" alt="" />
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${t("kundaliSection.ashtakVarga")}">
+          ${slots.map((slot) => {
+            const house = houses[slot.house - 1] || { sign_index: "" };
+            const signIndex = Number(house.sign_index) || "";
+            const point = signIndex ? pointsBySign.get(signIndex) : "";
+            return `
+              <g>
+                ${northHouseNumberHtml(slot, signIndex, "ashtakVarga")}
+                ${ashtakVargaPointBadgeHtml(slot.x, slot.y, point)}
+              </g>
+            `;
+          }).join("")}
+        </svg>
+      </div>
+    `;
+  }
+
+  async function loadAshtakVarga(planetKey) {
+    if (!state.jatakView.jatakId || !planetKey) return;
+    state.ashtakVarga.loading = true;
+    state.ashtakVarga.error = "";
+    state.ashtakVarga.errorKey = "";
+    render();
+    try {
+      state.ashtakVarga.data = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/ashtakavarga/${encodeURIComponent(planetKey)}`, "ashtakVarga.loadError");
+    } catch (error) {
+      state.ashtakVarga.error = error.message || t("ashtakVarga.loadError");
+      state.ashtakVarga.errorKey = error.messageKey || "ashtakVarga.loadError";
+    } finally {
+      state.ashtakVarga.loading = false;
+      render();
+    }
+  }
+
+  function ashtakVargaPointsBySign(data) {
+    const map = new Map();
+    collectAshtakPointCandidates(data).forEach((item) => {
+      const signValue = item.sign_index ?? item.sign ?? item.rashi_index ?? item.rashi ?? item.zodiac_sign_index;
+      const sign = Number(signValue) || signIndexFromName(signValue);
+      const value = item.total ?? item.points ?? item.point ?? item.bindu ?? item.value ?? item.score;
+      if (sign >= 1 && sign <= 12 && value !== undefined && value !== null && value !== "") {
+        map.set(sign, value);
+      }
+    });
+    return map;
+  }
+
+  function collectAshtakPointCandidates(data) {
+    const candidates = [];
+    const visit = (value, key = "") => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => visit(item, key));
+        return;
+      }
+      if (!value || typeof value !== "object") return;
+      const signKeys = ["sign_index", "sign", "rashi_index", "rashi", "zodiac_sign_index"];
+      const pointKeys = ["total", "points", "point", "bindu", "value", "score"];
+      if (signKeys.some((itemKey) => itemKey in value) && pointKeys.some((itemKey) => itemKey in value)) {
+        candidates.push(value);
+      }
+      Object.entries(value).forEach(([childKey, childValue]) => {
+        const numericKey = Number(childKey);
+        if (numericKey >= 1 && numericKey <= 12 && childValue && typeof childValue === "object") {
+          candidates.push({ sign_index: numericKey, ...childValue });
+        } else if (numericKey >= 1 && numericKey <= 12 && childValue !== null && childValue !== undefined && typeof childValue !== "object") {
+          candidates.push({ sign_index: numericKey, points: childValue });
+        }
+        visit(childValue, childKey);
+      });
+    };
+    visit(data);
+    return candidates;
+  }
+
+  function ashtakVargaJsonTilesHtml(data) {
+    if (!data) return `<div class="ashtak-varga-empty">${t("ashtakVarga.noData")}</div>`;
+    const rows = flattenJsonForTiles(data).slice(0, 80);
+    return `
+      <div class="ashtak-varga-json-tiles">
+        ${rows.map(([key, value]) => `
+          <div class="ashtak-varga-json-tile">
+            <span>${escapeHtml(key)}</span>
+            <strong>${escapeHtml(formatJsonTileValue(value))}</strong>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function ashtakVargaPointsTableHtml(data, selectedPlanet) {
+    const rows = ashtakVargaTableRows(data, selectedPlanet);
+    if (!rows.length) return ashtakVargaJsonTilesHtml(data);
+    return `
+      <div class="ashtak-varga-table-wrap">
+        <table class="ashtak-varga-sign-table">
+          <thead>
+            <tr>
+              <th>${t("ashtakVarga.planets")}</th>
+              ${Array.from({ length: 12 }, (_, index) => `<th>${escapeHtml(localizedSignName(index + 1))}</th>`).join("")}
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <th>${escapeHtml(localizedPlanetFullName(row.planet))}</th>
+                ${Array.from({ length: 12 }, (_, index) => {
+                  const value = row.points.get(index + 1);
+                  return `<td class="${ashtakVargaPointClass(value)}">${value === undefined || value === null || value === "" ? "-" : escapeHtml(String(value))}</td>`;
+                }).join("")}
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function ashtakVargaTableRows(data, selectedPlanet) {
+    const rowMap = new Map();
+    collectAshtakTableCandidates(data).forEach((item) => {
+      const planet = normalizedPlanetKey(item.planet || item.name || item.body || item.graha || item.lord || selectedPlanet);
+      if (!planet) return;
+      const signValue = item.sign_index ?? item.sign ?? item.rashi_index ?? item.rashi ?? item.zodiac_sign_index;
+      const sign = Number(signValue) || signIndexFromName(signValue);
+      const value = item.total ?? item.points ?? item.point ?? item.bindu ?? item.value ?? item.score;
+      if (!(sign >= 1 && sign <= 12) || value === undefined || value === null || value === "") return;
+      if (!rowMap.has(planet)) rowMap.set(planet, new Map());
+      rowMap.get(planet).set(sign, value);
+    });
+
+    if (!rowMap.size) {
+      const pointsBySign = ashtakVargaPointsBySign(data);
+      if (pointsBySign.size) rowMap.set(selectedPlanet, pointsBySign);
+    }
+
+    const order = ashtakVargaPlanets().map((planet) => planet.key);
+    return [...rowMap.entries()]
+      .sort(([first], [second]) => {
+        const firstIndex = order.indexOf(first);
+        const secondIndex = order.indexOf(second);
+        return (firstIndex === -1 ? 99 : firstIndex) - (secondIndex === -1 ? 99 : secondIndex);
+      })
+      .map(([planet, points]) => ({ planet, points }));
+  }
+
+  function collectAshtakTableCandidates(data) {
+    const candidates = [];
+    const visit = (value, inheritedPlanet = "") => {
+      if (Array.isArray(value)) {
+        value.forEach((item) => visit(item, inheritedPlanet));
+        return;
+      }
+      if (!value || typeof value !== "object") return;
+
+      const directPlanet = value.planet || value.name || value.body || value.graha || value.lord || inheritedPlanet;
+      const signKeys = ["sign_index", "sign", "rashi_index", "rashi", "zodiac_sign_index"];
+      const pointKeys = ["total", "points", "point", "bindu", "value", "score"];
+      if (directPlanet && signKeys.some((itemKey) => itemKey in value) && pointKeys.some((itemKey) => itemKey in value)) {
+        candidates.push({ planet: directPlanet, ...value });
+      }
+
+      Object.entries(value).forEach(([childKey, childValue]) => {
+        const planetFromKey = normalizedPlanetKey(childKey) || inheritedPlanet;
+        const numericKey = Number(childKey);
+        if (directPlanet && numericKey >= 1 && numericKey <= 12 && childValue !== null && childValue !== undefined && typeof childValue !== "object") {
+          candidates.push({ planet: directPlanet, sign_index: numericKey, points: childValue });
+        } else if (planetFromKey && childValue && typeof childValue === "object") {
+          Object.entries(childValue).forEach(([signKey, signValue]) => {
+            const sign = Number(signKey) || signIndexFromName(signKey);
+            if (sign >= 1 && sign <= 12 && signValue !== null && signValue !== undefined && typeof signValue !== "object") {
+              candidates.push({ planet: planetFromKey, sign_index: sign, points: signValue });
+            }
+          });
+        }
+        visit(childValue, planetFromKey);
+      });
+    };
+    visit(data);
+    return candidates;
+  }
+
+  function ashtakVargaPointClass(value) {
+    const point = Number(value);
+    if (!Number.isFinite(point)) return "";
+    if (point <= 3) return "ashtak-point-low";
+    if (point === 4) return "ashtak-point-mid";
+    return "ashtak-point-high";
+  }
+
+  function ashtakVargaPointBadgeHtml(x, y, value) {
+    if (value === "" || value === undefined || value === null) {
+      return `<text class="ashtak-varga-point-empty" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">-</text>`;
+    }
+    const className = ashtakVargaPointClass(value);
+    return `
+      <g class="ashtak-varga-point-badge ${className}">
+        <circle cx="${formatSvgNumber(x)}" cy="${formatSvgNumber(y)}" r="3.15"></circle>
+        <text x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${escapeHtml(String(value))}</text>
+      </g>
+    `;
+  }
+
+  function flattenJsonForTiles(value, prefix = "") {
+    if (value === null || value === undefined) return [[prefix || "value", "-"]];
+    if (typeof value !== "object") return [[prefix || "value", value]];
+    if (Array.isArray(value)) {
+      return value.flatMap((item, index) => flattenJsonForTiles(item, `${prefix}[${index + 1}]`));
+    }
+    return Object.entries(value).flatMap(([key, child]) => flattenJsonForTiles(child, prefix ? `${prefix}.${key}` : key));
+  }
+
+  function formatJsonTileValue(value) {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
   }
 
   function basicDetailsSectionHtml() {
@@ -1380,7 +1678,6 @@
         <div class="kundali-section-chart-stack">
           ${kundaliImageChartBlockHtml("d1", topChart)}
           ${kundaliImageChartBlockHtml("d9", bottomChart)}
-          ${kundaliBirthInfoTileHtml()}
         </div>
         <div class="kundali-section-details">
           <div class="kundali-jatak-name-badge">${kundaliJatakSummaryHtml()}</div>
@@ -3869,7 +4166,7 @@
     return `
       <div class="double-diamond-frame two-d-transit-frame" style="background-image: url('${imageUrl}');">
         <img class="two-d-transit-image" src="${imageUrl}" alt="" />
-        <svg class="double-diamond-chart two-d-transit-overlay" style="background: transparent;" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Transit and natal chart">
+        <svg class="two-d-transit-overlay" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="Transit and natal chart">
           ${twoDTransitLayerHtml("outer", transitHouses)}
           ${twoDTransitLayerHtml("inner", natalHouses)}
         </svg>
@@ -3898,7 +4195,7 @@
   function twoDTransitSignHtml(position, signIndex, layer) {
     const x = Number(position?.x ?? 50);
     const y = Number(position?.y ?? 50);
-    return `<text class="double-diamond-sign ${layer}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${signIndex || ""}</text>`;
+    return `<text class="two-d-transit-sign ${layer}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${signIndex || ""}</text>`;
   }
 
   function twoDTransitBodiesHtml(slots, bodies, layer) {
@@ -3911,9 +4208,27 @@
       .map((body, index) => {
         const fallback = safeSlots[safeSlots.length - 1] || { x: 50, y: 50 };
         const position = safeSlots[index] || fallback;
-        return doubleDiamondPlanetLabelHtml(body, Number(position.x ?? 50), Number(position.y ?? 50), layer);
+        return twoDTransitPlanetLabelHtml(body, Number(position.x ?? 50), Number(position.y ?? 50), layer);
       })
       .join("");
+  }
+
+  function twoDTransitPlanetLabelHtml(body, x, y, layer) {
+    if (typeof body === "string") {
+      return `<text class="two-d-transit-planet ${layer} overflow" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">${body}</text>`;
+    }
+
+    const planetName = shortPlanetName(body.name);
+    const degree = planetDegreeLabel(body.degree);
+    const colorClass = layer === "outer" ? gocharPlanetColorClass(body.name) : "planet-natal";
+    const retrogradeMark = body.retrograde ? `<tspan class="planet-degree-sup" dx="0.12" dy="-1">*</tspan>` : "";
+    const degreeDy = body.retrograde ? "0" : "-1";
+    const tooltip = encodeURIComponent(planetTooltipHtml(body, layer));
+    return `
+      <text class="two-d-transit-planet ${layer} ${colorClass}" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}" data-planet-tooltip="${tooltip}" data-tooltip-layer="${layer}">
+        <tspan>${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.25" dy="${degreeDy}">${degree}</tspan>` : ""}
+      </text>
+    `;
   }
 
   function northDiamondSlots() {
@@ -5221,6 +5536,7 @@
   async function loadSavedJatakView(jatakId, dateTimeLabel, jatakName = "", birthDetails = null) {
     if (!jatakId) return;
     const previousKundaliSection = state.jatakView.active ? state.jatakView.kundaliSection : "basic-details";
+    state.ashtakVarga = { selectedPlanet: "", data: null, loading: false, error: "", errorKey: "" };
     state.headingChoice = "home";
     state.homeView = "current-gochar";
     if (state.openKundali.open || state.headerActiveMenu === "open-kundali") {
@@ -5235,6 +5551,7 @@
       jatakName,
       dateTimeLabel,
       d1: null,
+      rasi: null,
       d9: null,
       positions: null,
       cusps: null,
@@ -5281,13 +5598,15 @@
     try {
       const topChart = state.chartHeaderChoices.d1.chart || "D1";
       const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
-      const [d1, d9, positions] = await Promise.all([
+      const [d1, d9, rasi, positions] = await Promise.all([
         getJson(jatakChartUrl(jatakId, topChart), "chart.loadError"),
         getJson(jatakChartUrl(jatakId, bottomChart), "chart.loadError"),
+        getJson(jatakChartUrl(jatakId, "D1"), "chart.loadError"),
         getJson(`/jatak/${encodeURIComponent(jatakId)}/positions?include_aprakashita=true`, "chart.loadError"),
       ]);
       state.jatakView.d1 = d1;
       state.jatakView.d9 = d9;
+      state.jatakView.rasi = rasi;
       state.jatakView.positions = positions;
     } catch (error) {
       state.jatakView.error = error.message || t("chart.loadError");
@@ -5389,8 +5708,7 @@
     try {
       const response = await fetch("./src/data/2d_chart_layout.json");
       const layout = response.ok ? await response.json() : defaultTwoDChartLayout();
-      const draft = localStorage.getItem("ej_vedic_2d_chart_layout_draft");
-      return normalizeTwoDChartLayout(draft ? JSON.parse(draft) : layout);
+      return normalizeTwoDChartLayout(layout);
     } catch {
       return normalizeTwoDChartLayout(defaultTwoDChartLayout());
     }
@@ -5912,7 +6230,7 @@
 
     try {
       const birthDate = apiDateString(form.day, form.month, form.year);
-      const savedJatak = await postJson(
+      await postJson(
         "/jatak",
         {
           city_name: form.city_name,
@@ -5928,21 +6246,13 @@
         },
         "kundali.saveError",
       );
-      const savedJatakId = savedJatak?.jatak_id || savedJatak?.id;
       state.kundaliForm.message = t("kundali.saved");
       state.kundaliForm.form = defaultKundaliForm();
       state.kundaliForm.states = [];
       state.kundaliForm.cities = [];
       state.kundaliForm.open = false;
-      if (savedJatakId) {
-        await loadSavedJatakView(savedJatakId, `${birthDate} ${form.time}`, form.jatak_full_name, {
-          date: birthDate,
-          time: form.time,
-          timezone: form.timezone,
-          latitude: form.latitude,
-          longitude: form.longitude,
-        });
-      }
+      state.headerActiveMenu = "home";
+      resetToDefaultHome();
     } catch (error) {
       state.kundaliForm.error = error.message || t("kundali.saveError");
     } finally {
