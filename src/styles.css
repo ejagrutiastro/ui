@@ -20,13 +20,23 @@
 html,
 body,
 #app {
-  width: 100%;
   height: 100%;
+}
+
+html,
+body {
+  width: 100%;
+  overflow-x: auto;
 }
 
 body {
   margin: 0;
-  min-width: 320px;
+  min-width: 1280px;
+}
+
+#app {
+  width: 100%;
+  min-width: 1280px;
 }
 
 button,
@@ -38,6 +48,7 @@ select {
   display: grid;
   grid-template-rows: 10vh 5vh 85vh;
   width: 100%;
+  min-width: 1280px;
   min-height: 100vh;
   background: #ffffff;
 }
@@ -637,7 +648,8 @@ select {
 
 .ashtak-varga-jatak-badge {
   grid-row: 1;
-  align-self: center;
+  align-self: start;
+  margin-top: 15px;
 }
 
 .ashtak-varga-planet-strip {
@@ -1212,6 +1224,53 @@ select {
   height: auto;
   max-height: calc(100vh - 210px);
   overflow: auto;
+}
+
+.btr-timing-panel {
+  display: grid;
+  grid-template-columns: minmax(180px, 28%) minmax(360px, 1fr) minmax(260px, 30%);
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(15, 95, 168, 0.22);
+  border-top: 4px solid #0793b0;
+  border-radius: 8px;
+  background: #ffffff;
+  box-sizing: border-box;
+}
+
+.btr-date-stack {
+  display: grid;
+  gap: 8px;
+  color: #0f5fa8;
+}
+
+.btr-date-stack div {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.btr-date-stack span {
+  color: #667085;
+  font-size: 12px;
+}
+
+.btr-date-stack strong {
+  color: #0057b8;
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.btr-time-options {
+  grid-template-columns: repeat(5, minmax(66px, 1fr));
+  gap: 6px 18px;
+}
+
+.btr-step-buttons {
+  margin-top: 0;
 }
 
 .kundali-nakshatra-section {
@@ -4365,11 +4424,11 @@ select {
 }
 
 .two-d-transit-planet.outer {
-  font-size: 1.65px;
+  font-size: 2.25px;
 }
 
 .two-d-transit-planet.inner {
-  font-size: 1.3px;
+  font-size: 1.75px;
 }
 
 .two-d-transit-planet.planet-green {
@@ -4389,7 +4448,7 @@ select {
 }
 
 .two-d-transit-planet .planet-degree-sup {
-  font-size: 0.95px;
+  font-size: 1.35px;
 }
 
 .double-diamond-legend {

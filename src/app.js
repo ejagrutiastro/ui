@@ -123,6 +123,10 @@
         error: "",
         errorKey: "",
       },
+      btr: {
+        workingDate: "",
+        step: "Month",
+      },
       kundaliSection: "basic-details",
       loading: false,
       error: "",
@@ -478,6 +482,12 @@
             loadNakshatraNaadi();
             loadDashaLevel("");
           }
+          if (section === "btr") {
+            state.chartHeaderChoices.d1.chart = "D1";
+            state.chartHeaderChoices.d9.chart = "D9";
+            initBtrWorkingDate();
+            loadBtrCharts();
+          }
         }
         if (button.dataset.ashtakPlanet) {
           state.ashtakVarga.selectedPlanet = button.dataset.ashtakPlanet;
@@ -540,6 +550,21 @@
     document.querySelectorAll("[data-transit-shift]").forEach((button) => {
       button.addEventListener("click", () => {
         shiftTransitGocharDate(Number(button.dataset.transitShift));
+      });
+    });
+
+    document.querySelectorAll("[name='btrTimeStep']").forEach((input) => {
+      input.addEventListener("change", () => {
+        state.jatakView.btr = {
+          ...(state.jatakView.btr || {}),
+          step: input.value,
+        };
+      });
+    });
+
+    document.querySelectorAll("[data-btr-shift]").forEach((button) => {
+      button.addEventListener("click", () => {
+        shiftBtrWorkingDate(Number(button.dataset.btrShift));
       });
     });
 
@@ -677,6 +702,10 @@
         loading: false,
         error: "",
         errorKey: "",
+      },
+      btr: {
+        workingDate: "",
+        step: "Month",
       },
       kundaliSection: "basic-details",
       loading: false,
@@ -1095,6 +1124,90 @@
     render();
   }
 
+  function initBtrWorkingDate() {
+    const birthDate = btrBirthDateTime();
+    state.jatakView.btr = {
+      ...(state.jatakView.btr || {}),
+      workingDate: birthDate ? birthDate.toISOString() : "",
+      step: state.jatakView.btr?.step || "Month",
+    };
+  }
+
+  function btrWorkingDate() {
+    const existing = new Date(state.jatakView.btr?.workingDate || "");
+    if (!Number.isNaN(existing.getTime())) return existing;
+    const birthDate = btrBirthDateTime();
+    return birthDate || new Date();
+  }
+
+  function btrBirthDateTime() {
+    const details = state.jatakView.birthDetails || {};
+    const rawDate = details.date || formatDisplayDateOnly(state.jatakView.dateTimeLabel);
+    const labelTimeMatch = String(state.jatakView.dateTimeLabel || "").match(/\b(\d{1,2}:\d{2}(?::\d{2})?)\b/);
+    const rawTime = details.time || (labelTimeMatch ? labelTimeMatch[1] : "") || formatTimeWithSeconds(state.jatakView.dateTimeLabel) || "00:00:00";
+    const isoDate = panchangApiDateFromJatakDate(rawDate);
+    if (!isoDate) return null;
+    const match = String(rawTime).match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?/);
+    const [year, month, day] = isoDate.split("-").map(Number);
+    const hour = match ? Number(match[1]) : 0;
+    const minute = match ? Number(match[2]) : 0;
+    const second = match && match[3] ? Number(match[3]) : 0;
+    const date = new Date(year, month - 1, day, hour, minute, second);
+    return Number.isNaN(date.getTime()) ? null : date;
+  }
+
+  function btrApiDateTime(date) {
+    return `${apiIsoDate(date)}T${apiTimeString(date)}`;
+  }
+
+  function formatBtrDateTime(date) {
+    return `${formatDisplayDateOnly(date.toISOString())} ${apiTimeString(date)}`;
+  }
+
+  async function shiftBtrWorkingDate(direction) {
+    if (state.jatakView.kundaliSection !== "btr") return;
+    const shifted = addDashaStep(btrWorkingDate(), state.jatakView.btr?.step || "Month", direction);
+    state.jatakView.btr = {
+      ...(state.jatakView.btr || {}),
+      workingDate: shifted.toISOString(),
+    };
+    await loadBtrCharts();
+  }
+
+  async function loadBtrCharts() {
+    if (!state.jatakView.active || !state.jatakView.jatakId) return;
+    const workingDate = btrWorkingDate();
+    const at = btrApiDateTime(workingDate);
+    state.chartHeaderChoices.d1.chart = "D1";
+    state.chartHeaderChoices.d9.chart = "D9";
+    state.chartRotations.d1 = null;
+    state.chartRotations.d9 = null;
+    state.jatakView = {
+      ...state.jatakView,
+      d1: null,
+      d9: null,
+      loading: true,
+      error: "",
+      errorKey: "",
+    };
+    render();
+
+    const [d1Result, d9Result] = await Promise.allSettled([
+      getJson(btrJatakChartUrl(state.jatakView.jatakId, "D1", at), "chart.loadError"),
+      getJson(btrJatakChartUrl(state.jatakView.jatakId, "D9", at), "chart.loadError"),
+    ]);
+
+    if (d1Result.status === "fulfilled") state.jatakView.d1 = d1Result.value;
+    if (d9Result.status === "fulfilled") state.jatakView.d9 = d9Result.value;
+    if (d1Result.status === "rejected" || d9Result.status === "rejected") {
+      const error = d1Result.reason || d9Result.reason || {};
+      state.jatakView.error = error.message || t("chart.loadError");
+      state.jatakView.errorKey = error.messageKey || "chart.loadError";
+    }
+    state.jatakView.loading = false;
+    render();
+  }
+
   function dashaWorkingDate() {
     const date = new Date(state.jatakView.dasha?.workingDate || Date.now());
     return Number.isNaN(date.getTime()) ? new Date() : date;
@@ -1301,6 +1414,7 @@
       ["N", "nav.nakshatraNaadi", "nakshatra-naadi"],
       ["A", "kundaliSection.ashtakVarga", "ashtak-varga"],
       ["VT", "kundaliSection.viewTransit", "view-transit"],
+      ["BTR", "kundaliSection.btr", "btr"],
     ]
       .map(([icon, labelKey, value]) => {
         if (value === "view-transit") return iconActionHtml(icon, labelKey, "", "", "view-transit");
@@ -1312,7 +1426,7 @@
   function kundaliSectionPlaceholderHtml() {
     const key = state.jatakView.kundaliSection || "basic-details";
     if (key === "basic-details") return basicDetailsSectionHtml();
-    if (key === "kundali") return kundaliSectionChartsHtml();
+    if (key === "kundali" || key === "btr") return kundaliSectionChartsHtml();
     if (key === "nakshatra-naadi") return kundaliNakshatraNaadiSectionHtml();
     if (key === "ashtak-varga") return ashtakVargaSectionHtml();
     const labelKey = {
@@ -1673,11 +1787,12 @@
   function kundaliSectionChartsHtml() {
     const topChart = state.chartHeaderChoices.d1.chart || "D1";
     const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
+    const isBtr = state.jatakView.kundaliSection === "btr";
     return `
       <div class="kundali-section-charts">
         <div class="kundali-section-chart-stack">
-          ${kundaliImageChartBlockHtml("d1", topChart)}
-          ${kundaliImageChartBlockHtml("d9", bottomChart)}
+          ${kundaliImageChartBlockHtml("d1", topChart, isBtr)}
+          ${kundaliImageChartBlockHtml("d9", bottomChart, isBtr)}
         </div>
         <div class="kundali-section-details">
           <div class="kundali-jatak-name-badge">${kundaliJatakSummaryHtml()}</div>
@@ -1685,6 +1800,44 @@
             <div class="current-gochar-planet-title">${t("chart.planetaryDetail")}</div>
             <div class="current-gochar-planet-body">${savedPlanetaryDetailHtml()}</div>
           </div>
+          ${isBtr ? btrTimingControlsHtml() : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function btrTimingControlsHtml() {
+    const options = ["Month", "Day", "Hour", "10 Min", "Minute"];
+    const birthDateTime = btrBirthDateTime();
+    const workingDateTime = btrWorkingDate();
+    const selectedStep = state.jatakView.btr?.step || "Month";
+    return `
+      <div class="btr-timing-panel">
+        <div class="btr-date-stack">
+          <div>
+            <span>${t("btr.dob")}</span>
+            <strong>${escapeHtml(birthDateTime ? formatBtrDateTime(birthDateTime) : "-")}</strong>
+          </div>
+          <div>
+            <span>${t("dasha.workingDate")}</span>
+            <strong>${escapeHtml(formatBtrDateTime(workingDateTime))}</strong>
+          </div>
+        </div>
+        <div class="dasha-time-options btr-time-options">
+          ${options
+            .map(
+              (option) => `
+                <label>
+                  <input type="radio" name="btrTimeStep" value="${escapeHtml(option)}" ${option === selectedStep ? "checked" : ""} />
+                  <span>${escapeHtml(option)}</span>
+                </label>
+              `,
+            )
+            .join("")}
+        </div>
+        <div class="dasha-step-buttons btr-step-buttons">
+          <button data-btr-shift="-1" type="button">-</button>
+          <button data-btr-shift="1" type="button">+</button>
         </div>
       </div>
     `;
@@ -5443,6 +5596,12 @@
     return `/jatak/${encodeURIComponent(jatakId)}/chart/${chartEndpoint(chartCode)}?include_aprakashita=true`;
   }
 
+  function btrJatakChartUrl(jatakId, chartCode, at) {
+    const params = new URLSearchParams({ include_aprakashita: "true" });
+    if (at) params.set("at", at);
+    return `/jatak/${encodeURIComponent(jatakId)}/chart/${chartEndpoint(chartCode)}?${params.toString()}`;
+  }
+
   function gocharChartUrl(at) {
     const params = new URLSearchParams({ include_aprakashita: "true" });
     if (at) params.set("at", at);
@@ -5574,6 +5733,10 @@
         error: "",
         errorKey: "",
       },
+      btr: {
+        workingDate: "",
+        step: "Month",
+      },
       kundaliSection: state.headerActiveMenu === "open-kundali" ? previousKundaliSection || "basic-details" : "basic-details",
       loading: true,
       error: "",
@@ -5584,9 +5747,11 @@
     getJson(`/jatak/${encodeURIComponent(jatakId)}`, "basicDetails.loadError")
       .then((details) => {
         state.jatakView.birthDetails = details || birthDetails;
+        if (state.jatakView.kundaliSection === "btr") initBtrWorkingDate();
       })
       .catch((error) => {
         state.jatakView.birthDetails = birthDetails;
+        if (state.jatakView.kundaliSection === "btr") initBtrWorkingDate();
         state.jatakView.birthDetailsError = error.message || t("basicDetails.loadError");
         state.jatakView.birthDetailsErrorKey = error.messageKey || "basicDetails.loadError";
       })
