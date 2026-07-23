@@ -1,6 +1,7 @@
 (function () {
   const API_BASE_URL = "http://127.0.0.1:8000";
   const CHART_LAYOUT_PLANET_SLOT_COUNT = 6;
+  const JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT = 12;
 
   const state = {
     language: localStorage.getItem("ej_vedic_language") || "en",
@@ -15,6 +16,7 @@
       show_outer_planets: false,
       show_chart_layout_button: false,
       show_2dchart_layout_button: false,
+      show_jaimini_chart_layout_button: false,
     },
     gochar: {
       data: null,
@@ -52,6 +54,56 @@
       error: "",
       errorKey: "",
       location: null,
+    },
+    searchKundali: {
+      records: [],
+      suggestions: [],
+      loading: false,
+      error: "",
+      errorKey: "",
+      page: 1,
+      rowsPerPage: 10,
+      totalRecords: 0,
+      totalPages: 1,
+      nameQuery: "",
+      noteQuery: "",
+      activeSearchType: "",
+      searchTimer: null,
+      suggestionOpen: false,
+      sectionACollapsed: false,
+      activeTool: "",
+      jaiminiInfoTab: "planetary",
+      selected: {
+        jatakId: null,
+        jatakName: "",
+        dateTimeLabel: "",
+        birthDetails: null,
+        d1: null,
+        d9: null,
+        d1Chart: "D1",
+        d9Chart: "D9",
+        jaimini: null,
+        jaiminiLoading: false,
+        jaiminiError: "",
+        jaiminiErrorKey: "",
+        d1Loading: false,
+        d9Loading: false,
+        positions: null,
+        loading: false,
+        error: "",
+        errorKey: "",
+        dasha: {
+          level: "dasha",
+          path: [],
+          activePath: [],
+          workingDate: new Date().toISOString(),
+          step: "Hour",
+          data: null,
+          loading: false,
+          error: "",
+          errorKey: "",
+        },
+      },
     },
     imageModal: {
       open: false,
@@ -93,6 +145,32 @@
         x: 0,
         y: 0,
       },
+    },
+    homeNotes: {
+      records: [],
+      loading: false,
+      error: "",
+      page: 1,
+      rowsPerPage: 10,
+      totalRecords: 0,
+      totalPages: 1,
+      footer: "",
+      query: "",
+      selectedId: null,
+      mode: "view",
+      noteText: "",
+      ascSign: 1,
+      housePlanets: {},
+      message: "",
+      saving: false,
+      planetMenu: {
+        open: false,
+        house: null,
+        x: 0,
+        y: 0,
+      },
+      sectionACollapsed: false,
+      searchTimer: null,
     },
     jatakView: {
       active: false,
@@ -185,6 +263,7 @@
       data: null,
       workingDate: new Date().toISOString(),
       step: "Month",
+      source: "jatakView",
       loading: false,
       error: "",
       errorKey: "",
@@ -205,12 +284,20 @@
       slot: 1,
       message: "",
     },
+    jaiminiChartLayoutModal: {
+      open: false,
+      mode: "sign",
+      house: 1,
+      slot: 1,
+      message: "",
+    },
     messages: {
       en: {},
       mr: {},
     },
     chartLayout: null,
     twoDChartLayout: null,
+    jaiminiChartLayout: null,
   };
 
   const app = document.getElementById("app");
@@ -223,6 +310,7 @@
     state.settings = { ...state.settings, ...(await loadSettings()) };
     state.chartLayout = await loadChartLayout();
     state.twoDChartLayout = await loadTwoDChartLayout();
+    state.jaiminiChartLayout = await loadJaiminiChartLayout();
     state.naadiRules.data = await loadNaadiRules();
     initializeNaadiRuleChoices();
     render();
@@ -255,9 +343,13 @@
           <div class="section2-icons">
             ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("./src/images/gochar.jpg", "homeIcon.currentGochar", "", "", "current-gochar", state.homeView === "current-gochar") : ""}
             ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("./src/images/hora.jpg", "homeIcon.hora", "", "", "hora", state.homeView === "hora") : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("./src/images/search_kundali.png", "homeIcon.searchKundali", "", "", "search-kundali", state.homeView === "search-kundali") : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active ? iconActionHtml("./src/images/add_notes.png", "homeIcon.notes", "", "", "home-notes", state.homeView === "notes") : ""}
+            ${state.headingChoice === "home" && !state.jatakView.active && state.searchKundali.selected?.d1 ? iconActionHtml("VT", "kundaliSection.viewTransit", "", "", "search-view-transit", false) : ""}
             ${state.jatakView.active && state.headingChoice === "home" && state.headerActiveMenu === "open-kundali" ? kundaliSectionButtonsHtml() : ""}
             ${shouldShowChartLayoutButton() ? iconActionHtml("L", "chartLayout.title", "", "", "chart-layout") : ""}
             ${shouldShowTwoDChartLayoutButton() ? iconActionHtml("2D", "twoDChartLayout.title", "", "", "2d-chart-layout") : ""}
+            ${shouldShowJaiminiChartLayoutButton() ? iconActionHtml("./src/images/jaimini.jpg", "jaiminiChartLayout.title", "", "", "jaimini-chart-layout") : ""}
           </div>
           <div class="choice-picker">
             <button class="choice-picker-button" id="headingPickerButton" type="button" aria-expanded="false" ${isHeadingPickerEnabled() ? "" : "disabled"}>
@@ -270,18 +362,21 @@
           </div>
         </section>
 
+        <section class="section section-title" aria-label="section_title">${sectionTitleHtml()}</section>
+
         <section class="section section3" aria-label="section3">
           <div class="vsectionlhs" aria-label="vsectionlhs">${leftRailMenuHtml()}</div>
           <div class="vsectionmiddle" aria-label="vsectionmiddle">
             ${sectionMiddleHtml()}
           </div>
-          <div class="vsectionrhs" aria-label="vsectionrhs"></div>
+          <div class="vsectionrhs" aria-label="vsectionrhs">${rightRailToolsHtml()}</div>
         </section>
         ${state.kundaliForm.open ? kundaliModalHtml() : ""}
         ${state.openKundali.open ? openKundaliModalHtml() : ""}
         ${state.transitModal.open ? transitGocharModalHtml() : ""}
         ${state.chartLayoutModal.open ? chartLayoutModalHtml() : ""}
         ${state.twoDChartLayoutModal.open ? twoDChartLayoutModalHtml() : ""}
+        ${state.jaiminiChartLayoutModal.open ? jaiminiChartLayoutModalHtml() : ""}
         ${state.imageModal.open ? imageModalHtml() : ""}
         ${state.astroNotes.open ? astroNotesModalHtml() : ""}
         <div class="floating-planet-tooltip" id="floatingPlanetTooltip" hidden></div>
@@ -451,6 +546,9 @@
         if (button.dataset.action === "view-transit") {
           openTransitGocharModal();
         }
+        if (button.dataset.action === "search-view-transit") {
+          openTransitGocharModal("search-kundali");
+        }
         if (button.dataset.action === "current-gochar") {
           state.homeView = "current-gochar";
           render();
@@ -460,6 +558,20 @@
           state.homeView = "hora";
           render();
           loadHomeHora();
+        }
+        if (button.dataset.action === "search-kundali") {
+          state.homeView = "search-kundali";
+          resetSearchKundaliView();
+          render();
+          loadSearchKundaliRecords({ autoOpenLatest: true });
+        }
+        if (button.dataset.action === "home-notes") {
+          state.homeView = "notes";
+          state.homeNotes.page = 1;
+          state.homeNotes.records = [];
+          state.homeNotes.error = "";
+          render();
+          loadHomeNotes();
         }
         if (button.dataset.action === "jatak-panchang") {
           state.jatakView.rightView = "panchang";
@@ -488,6 +600,9 @@
             initBtrWorkingDate();
             loadBtrCharts();
           }
+          if (section === "ashtak-varga") {
+            selectDefaultAshtakVarga();
+          }
         }
         if (button.dataset.ashtakPlanet) {
           state.ashtakVarga.selectedPlanet = button.dataset.ashtakPlanet;
@@ -503,7 +618,67 @@
         if (button.dataset.action === "2d-chart-layout") {
           openTwoDChartLayoutModal();
         }
+        if (button.dataset.action === "jaimini-chart-layout") {
+          openJaiminiChartLayoutModal();
+        }
       });
+    });
+
+    document.querySelectorAll("[data-home-notes-page]").forEach((button) => {
+      button.addEventListener("click", () => changeHomeNotesPage(button.dataset.homeNotesPage));
+    });
+    document.getElementById("homeNotesSearch")?.addEventListener("input", (event) => handleHomeNotesSearchInput(event));
+    document.querySelector("[data-home-notes-toggle]")?.addEventListener("click", () => {
+      state.homeNotes.sectionACollapsed = !state.homeNotes.sectionACollapsed;
+      render();
+    });
+    document.querySelector("[data-home-notes-reset]")?.addEventListener("click", () => resetHomeNotesSearch());
+    document.querySelectorAll("[data-home-note-select]").forEach((button) => {
+      button.addEventListener("click", () => selectHomeNote(button.dataset.homeNoteSelect || ""));
+      button.addEventListener("mouseenter", () => positionHomeNoteTooltip(button));
+      button.addEventListener("focus", () => positionHomeNoteTooltip(button));
+    });
+    document.querySelectorAll("[data-home-notes-action]").forEach((button) => {
+      button.addEventListener("click", () => handleHomeNotesAction(button.dataset.homeNotesAction || ""));
+    });
+    document.getElementById("homeNotesDetailText")?.addEventListener("input", (event) => {
+      state.homeNotes.noteText = event.target.value;
+      state.homeNotes.message = "";
+      state.homeNotes.error = "";
+    });
+    document.querySelectorAll("[data-home-note-asc-sign]").forEach((sign) => {
+      sign.addEventListener("click", () => {
+        if (!isHomeNotesEditable()) return;
+        state.homeNotes.ascSign = Number(sign.dataset.homeNoteAscSign) || 1;
+        render();
+      });
+    });
+    document.querySelectorAll("[data-home-note-remove-planet]").forEach((planetLabel) => {
+      planetLabel.addEventListener("click", (event) => {
+        event.stopPropagation();
+        if (!isHomeNotesEditable()) return;
+        removeHomeNotePlanetFromHouse(
+          Number(planetLabel.dataset.homeNoteRemoveHouse) || 0,
+          planetLabel.dataset.homeNoteRemovePlanet || "",
+        );
+      });
+    });
+    document.querySelectorAll("[data-home-note-house]").forEach((house) => {
+      house.addEventListener("contextmenu", (event) => {
+        if (!isHomeNotesEditable()) return;
+        event.preventDefault();
+        const shellRect = document.querySelector(".home-notes-detail-shell")?.getBoundingClientRect();
+        state.homeNotes.planetMenu = {
+          open: true,
+          house: Number(house.dataset.homeNoteHouse) || 1,
+          x: Math.max(8, event.clientX - (shellRect?.left || 0)),
+          y: Math.max(8, event.clientY - (shellRect?.top || 0)),
+        };
+        render();
+      });
+    });
+    document.querySelectorAll("[data-home-note-planet-option]").forEach((button) => {
+      button.addEventListener("click", () => addHomeNotePlanetToHouse(button.dataset.homeNotePlanetOption || ""));
     });
 
     document.getElementById("naadiRootSelect")?.addEventListener("change", (event) => {
@@ -529,7 +704,7 @@
 
     document.querySelectorAll("[name='dashaTimeStep']").forEach((input) => {
       input.addEventListener("change", () => {
-        state.jatakView.dasha.step = input.value;
+        dashaSourceView().dasha.step = input.value;
       });
     });
 
@@ -568,6 +743,56 @@
       });
     });
 
+    document.querySelectorAll("[data-search-kundali-page]").forEach((button) => {
+      button.addEventListener("click", () => {
+        changeSearchKundaliPage(Number(button.dataset.searchKundaliPage));
+      });
+    });
+
+    document.querySelector("[data-search-kundali-section-toggle]")?.addEventListener("click", () => {
+      state.searchKundali.sectionACollapsed = !state.searchKundali.sectionACollapsed;
+      state.searchKundali.suggestionOpen = false;
+      render();
+    });
+
+    document.querySelectorAll("[data-search-kundali-input]").forEach((input) => {
+      input.addEventListener("input", (event) => handleSearchKundaliInput(event, input.dataset.searchKundaliInput));
+      input.addEventListener("focus", () => {
+        state.searchKundali.activeSearchType = input.dataset.searchKundaliInput || "";
+        if (searchKundaliActiveQuery().length >= 3) state.searchKundali.suggestionOpen = true;
+      });
+    });
+
+    document.querySelector(".search-kundali-section-a-bottom")?.addEventListener("mouseenter", hideSearchKundaliSuggestions);
+
+    document.querySelectorAll("[data-search-kundali-suggestion]").forEach((button) => {
+      button.addEventListener("click", () => applySearchKundaliSuggestion(button.dataset.searchKundaliSuggestion));
+    });
+
+    document.querySelectorAll("[data-search-kundali-clear]").forEach((button) => {
+      button.addEventListener("click", () => clearSearchKundaliField(button.dataset.searchKundaliClear));
+    });
+
+    document.querySelectorAll("[data-search-kundali-record]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.searchKundali.suggestionOpen = false;
+        loadSearchKundaliPreview(button.dataset.searchKundaliRecord);
+      });
+    });
+
+    document.querySelectorAll("[data-search-kundali-tool]").forEach((button) => {
+      button.addEventListener("click", () => {
+        handleSearchKundaliTool(button.dataset.searchKundaliTool);
+      });
+    });
+
+    document.querySelectorAll("[data-jaimini-info-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        state.searchKundali.jaiminiInfoTab = button.dataset.jaiminiInfoTab || "planetary";
+        render();
+      });
+    });
+
     bindPlanetTooltips();
 
     document.querySelectorAll("[data-dasha-current]").forEach((button) => {
@@ -583,6 +808,12 @@
       });
     });
 
+    document.querySelectorAll("[data-search-kundali-chart-choice]").forEach((button) => {
+      button.addEventListener("click", () => {
+        updateSearchKundaliPreviewChart(button.dataset.searchKundaliChartKey, button.dataset.searchKundaliChartChoice);
+      });
+    });
+
     document.querySelectorAll("[data-rotate-chart][data-sign-index]").forEach((sign) => {
       sign.addEventListener("dblclick", () => {
         rotateChartToSign(sign.dataset.rotateChart, sign.dataset.signIndex);
@@ -594,6 +825,26 @@
     attachAstroNotesHandlers();
     attachChartLayoutHandlers();
     attachTwoDChartLayoutHandlers();
+    attachJaiminiChartLayoutHandlers();
+  }
+
+  function sectionTitleHtml() {
+    const view = sectionTitleJatakView();
+    if (!view) return "";
+    return `<div class="kundali-jatak-name-badge section-title-jatak-badge">${kundaliJatakSummaryForHtml(view)}</div>`;
+  }
+
+  function sectionTitleJatakView() {
+    if (state.headingChoice !== "home") return null;
+    if (state.homeView === "search-kundali" && state.searchKundali.selected?.jatakId) {
+      return state.searchKundali.selected;
+    }
+    if (state.jatakView.active) {
+      if (state.jatakView.kundaliSection === "nakshatra-naadi") return nakshatraNaadiSourceView();
+      if (state.jatakView.kundaliSection === "ashtak-varga") return ashtakVargaSourceView();
+      return state.jatakView;
+    }
+    return null;
   }
 
   function closeLeftRailSubmenus() {
@@ -757,8 +1008,6 @@
     const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
     state.chartRotations.d1 = null;
     state.chartRotations.d9 = null;
-    state.chartHeaderChoices.d1.chart = "D1";
-    state.chartHeaderChoices.d9.chart = "D9";
     state.jatakView = {
       ...state.jatakView,
       d1: null,
@@ -822,29 +1071,53 @@
   }
 
   async function loadNakshatraNaadi() {
-    if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.nakshatraNaadiLoading) return;
-    state.jatakView.nakshatraNaadiLoading = true;
-    state.jatakView.nakshatraNaadiError = "";
-    state.jatakView.nakshatraNaadiErrorKey = "";
+    const isSearchSource = isSearchKundaliTool("nakshatra-naadi");
+    const sourceView = nakshatraNaadiSourceView();
+    const jatakId = sourceView.jatakId;
+    if (!sourceView.jatakId || sourceView.nakshatraNaadiLoading) return;
+    setNakshatraNaadiSourceState(isSearchSource, jatakId, {
+      nakshatraNaadiLoading: true,
+      nakshatraNaadiError: "",
+      nakshatraNaadiErrorKey: "",
+    });
     render();
 
     try {
-      state.jatakView.nakshatraNaadi = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/kp/nakshatra-nadi`, "nakshatraNaadi.loadError");
+      const data = await getJson(`/jatak/${encodeURIComponent(jatakId)}/kp/nakshatra-nadi`, "nakshatraNaadi.loadError");
+      setNakshatraNaadiSourceState(isSearchSource, jatakId, { nakshatraNaadi: data });
     } catch (error) {
-      state.jatakView.nakshatraNaadiError = error.message || t("nakshatraNaadi.loadError");
-      state.jatakView.nakshatraNaadiErrorKey = error.messageKey || "nakshatraNaadi.loadError";
+      setNakshatraNaadiSourceState(isSearchSource, jatakId, {
+        nakshatraNaadiError: error.message || t("nakshatraNaadi.loadError"),
+        nakshatraNaadiErrorKey: error.messageKey || "nakshatraNaadi.loadError",
+      });
     } finally {
-      state.jatakView.nakshatraNaadiLoading = false;
+      setNakshatraNaadiSourceState(isSearchSource, jatakId, { nakshatraNaadiLoading: false });
       render();
     }
   }
 
-  async function openTransitGocharModal() {
+  function setNakshatraNaadiSourceState(isSearchSource, jatakId, patch) {
+    if (isSearchSource) {
+      if (String(state.searchKundali.selected?.jatakId || "") !== String(jatakId || "")) return;
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        ...patch,
+      };
+      return;
+    }
+    state.jatakView = {
+      ...state.jatakView,
+      ...patch,
+    };
+  }
+
+  async function openTransitGocharModal(source = "jatakView") {
     localStorage.removeItem("ej_vedic_2d_chart_layout_draft");
     state.twoDChartLayout = await loadTwoDChartLayout();
     state.transitModal = {
       ...state.transitModal,
       open: true,
+      source,
       workingDate: state.jatakView.dasha?.workingDate || new Date().toISOString(),
       step: "Month",
       error: "",
@@ -886,6 +1159,18 @@
   function closeTwoDChartLayoutModal() {
     state.twoDChartLayoutModal.open = false;
     state.twoDChartLayoutModal.message = "";
+    render();
+  }
+
+  function openJaiminiChartLayoutModal() {
+    state.jaiminiChartLayoutModal.open = true;
+    state.jaiminiChartLayoutModal.message = "";
+    render();
+  }
+
+  function closeJaiminiChartLayoutModal() {
+    state.jaiminiChartLayoutModal.open = false;
+    state.jaiminiChartLayoutModal.message = "";
     render();
   }
 
@@ -1041,21 +1326,22 @@
   }
 
   async function loadDashaLevel(pathValue = "") {
-    if (!state.jatakView.active || !state.jatakView.jatakId || state.jatakView.dasha.loading) return;
+    const isSearchSource = isSearchKundaliTool("nakshatra-naadi");
+    const sourceView = dashaSourceView();
+    const jatakId = sourceView.jatakId;
+    if (!jatakId || sourceView.dasha.loading) return;
     const path = parseDashaPath(pathValue);
-    state.jatakView.dasha = {
-      ...state.jatakView.dasha,
+    setDashaSourceState(isSearchSource, jatakId, {
       loading: true,
       error: "",
       errorKey: "",
-    };
+    });
     render();
 
     try {
       const query = path.length ? `/children?path=${encodeURIComponent(path.join(","))}` : "";
-      const data = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/dasha/vimshottari${query}`, "dasha.loadError");
-      state.jatakView.dasha = {
-        ...state.jatakView.dasha,
+      const data = await getJson(`/jatak/${encodeURIComponent(jatakId)}/dasha/vimshottari${query}`, "dasha.loadError");
+      setDashaSourceState(isSearchSource, jatakId, {
         level: dashaLevelFromPath(path),
         path,
         data,
@@ -1063,22 +1349,42 @@
         loading: false,
         error: "",
         errorKey: "",
-      };
+      });
     } catch (error) {
-      state.jatakView.dasha = {
-        ...state.jatakView.dasha,
+      setDashaSourceState(isSearchSource, jatakId, {
         level: dashaLevelFromPath(path),
         path,
         loading: false,
         error: error.message || t("dasha.loadError"),
         errorKey: error.messageKey || "dasha.loadError",
-      };
+      });
     }
     render();
   }
 
+  function setDashaSourceState(isSearchSource, jatakId, patch) {
+    if (isSearchSource) {
+      if (String(state.searchKundali.selected?.jatakId || "") !== String(jatakId || "")) return;
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        dasha: {
+          ...(state.searchKundali.selected.dasha || defaultDashaState()),
+          ...patch,
+        },
+      };
+      return;
+    }
+    state.jatakView = {
+      ...state.jatakView,
+      dasha: {
+        ...(state.jatakView.dasha || defaultDashaState()),
+        ...patch,
+      },
+    };
+  }
+
   function goBackDasha() {
-    const path = state.jatakView.dasha.path || [];
+    const path = dashaSourceView().dasha.path || [];
     if (!path.length) return;
     loadDashaLevel(path.slice(0, -1).join(","));
   }
@@ -1097,8 +1403,9 @@
   }
 
   async function shiftDashaWorkingDate(direction) {
+    const sourceView = dashaSourceView();
     const current = dashaWorkingDate();
-    const shifted = addDashaStep(current, state.jatakView.dasha.step || "Hour", direction);
+    const shifted = addDashaStep(current, sourceView.dasha.step || "Hour", direction);
     await updateDashaWorkingDate(shifted);
   }
 
@@ -1107,8 +1414,9 @@
   }
 
   async function showCurrentDasha() {
-    state.jatakView.dasha = {
-      ...state.jatakView.dasha,
+    const sourceView = dashaSourceView();
+    sourceView.dasha = {
+      ...sourceView.dasha,
       workingDate: new Date().toISOString(),
     };
     await loadDashaLevel("");
@@ -1116,10 +1424,11 @@
 
   async function updateDashaWorkingDate(date) {
     if (!date || Number.isNaN(date.getTime())) return;
-    state.jatakView.dasha = {
-      ...state.jatakView.dasha,
+    const sourceView = dashaSourceView();
+    sourceView.dasha = {
+      ...sourceView.dasha,
       workingDate: date.toISOString(),
-      activePath: await resolveActiveDashaPath(state.jatakView.dasha.data, date),
+      activePath: await resolveActiveDashaPath(sourceView.dasha.data, date),
     };
     render();
   }
@@ -1209,7 +1518,7 @@
   }
 
   function dashaWorkingDate() {
-    const date = new Date(state.jatakView.dasha?.workingDate || Date.now());
+    const date = new Date(dashaSourceView().dasha?.workingDate || Date.now());
     return Number.isNaN(date.getTime()) ? new Date() : date;
   }
 
@@ -1231,7 +1540,7 @@
   }
 
   function parseJatakBirthDate() {
-    const value = String(state.jatakView.dateTimeLabel || "").trim();
+    const value = String(dashaSourceView().dateTimeLabel || "").trim();
     const match = value.match(/^(\d{1,2})-([A-Za-z]{3})-(\d{4})/);
     if (!match) return null;
     const months = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
@@ -1256,13 +1565,14 @@
   }
 
   async function resolveActiveDashaPath(data, targetDate = dashaWorkingDate()) {
+    const sourceView = dashaSourceView();
     let active = (data?.periods || []).find((period) => isCurrentDashaPeriod(period, targetDate));
     let path = Array.isArray(active?.path) ? active.path : [];
 
     while (path.length > 0 && path.length < 3) {
       try {
         const childData = await getJson(
-          `/jatak/${encodeURIComponent(state.jatakView.jatakId)}/dasha/vimshottari/children?path=${encodeURIComponent(path.join(","))}`,
+          `/jatak/${encodeURIComponent(sourceView.jatakId)}/dasha/vimshottari/children?path=${encodeURIComponent(path.join(","))}`,
           "dasha.loadError",
         );
         active = (childData?.periods || []).find((period) => isCurrentDashaPeriod(period, targetDate));
@@ -1338,6 +1648,15 @@
     );
   }
 
+  function shouldShowJaiminiChartLayoutButton() {
+    return Boolean(
+      state.settings.show_jaimini_chart_layout_button === true &&
+      state.headerActiveMenu === "home" &&
+      state.headingChoice === "home" &&
+      !state.jatakView.active,
+    );
+  }
+
   function headerTitleText() {
     return state.jatakView.active && state.jatakView.jatakName ? state.jatakView.jatakName : t("header.welcome");
   }
@@ -1382,6 +1701,14 @@
       return `<div class="home-section-placeholder hora-home-placeholder">${horaHtml()}</div>`;
     }
 
+    if (state.headingChoice === "home" && !state.jatakView.active && state.homeView === "search-kundali") {
+      return searchKundaliPlaceholderHtml();
+    }
+
+    if (state.headingChoice === "home" && !state.jatakView.active && state.homeView === "notes") {
+      return homeNotesPlaceholderHtml();
+    }
+
     if (state.headingChoice === "home" || state.headingChoice === "header") {
       const topChart = state.chartHeaderChoices.d1.chart || "D1";
       const bottomChart = state.chartHeaderChoices.d9.chart || "D9";
@@ -1403,6 +1730,745 @@
     }
 
     return `<div class="generic-middle-layout"></div>`;
+  }
+
+  function homeNotesPlaceholderHtml() {
+    const isCollapsed = state.homeNotes.sectionACollapsed;
+    return `
+      <div class="home-notes-placeholder ${isCollapsed ? "home-notes-placeholder-collapsed" : ""}">
+        <section class="home-notes-section-a astro-notes-placeholder-right" aria-label="${t("homeNotes.leftPanel")}">
+          ${isCollapsed ? homeNotesCollapseButtonHtml() : homeNotesListHtml()}
+        </section>
+        <section class="home-notes-section-b" aria-label="${t("homeNotes.rightPanel")}">
+          ${homeNotesDetailHtml()}
+        </section>
+      </div>
+    `;
+  }
+
+  function homeNotesCollapseButtonHtml() {
+    const isCollapsed = state.homeNotes.sectionACollapsed;
+    return `
+      <button class="home-notes-section-toggle" data-home-notes-toggle type="button" title="${t(isCollapsed ? "searchKundali.expand" : "searchKundali.collapse")}" aria-label="${t(isCollapsed ? "searchKundali.expand" : "searchKundali.collapse")}">
+        ${isCollapsed ? "&gt;" : "&lt;"}
+      </button>
+    `;
+  }
+
+  function homeNotesListHtml() {
+    const rows = state.homeNotes.records || [];
+    return `
+      <div class="home-notes-list">
+        ${homeNotesSearchHtml()}
+        <div class="home-notes-list-body">
+          ${state.homeNotes.loading ? `<div class="home-notes-status">${t("common.loading")}</div>` : ""}
+          ${state.homeNotes.error ? `<div class="home-notes-status error">${escapeHtml(state.homeNotes.error)}</div>` : ""}
+          ${!state.homeNotes.loading && !state.homeNotes.error && !rows.length ? `<div class="home-notes-status">${t("homeNotes.noRecords")}</div>` : ""}
+          ${!state.homeNotes.loading && !state.homeNotes.error ? rows.map(homeNotesRowHtml).join("") : ""}
+        </div>
+        ${homeNotesPaginationHtml()}
+      </div>
+    `;
+  }
+
+  function homeNotesRowHtml(note) {
+    const meta = homeNotesMetaText(note);
+    const active = String(state.homeNotes.selectedId || "") === String(note.id || "");
+    return `
+      <button class="home-notes-row ${active ? "active" : ""}" data-home-note-select="${escapeHtml(note.id)}" type="button">
+        <strong>${escapeHtml(astroNotesPreviewText(note.note_text || "", 100))}</strong>
+        ${meta ? `<span>${escapeHtml(meta)}</span>` : ""}
+        ${note.note_text ? `<div class="home-notes-html-tooltip">${formatNoteBlockHtml(note.note_text)}</div>` : ""}
+      </button>
+    `;
+  }
+
+  function positionHomeNoteTooltip(row) {
+    const tooltip = row?.querySelector(".home-notes-html-tooltip");
+    if (!row || !tooltip) return;
+    tooltip.style.setProperty("--home-note-tooltip-left", "0px");
+    tooltip.style.setProperty("--home-note-tooltip-top", "0px");
+    tooltip.classList.add("measuring");
+    const rowRect = row.getBoundingClientRect();
+    const tooltipRect = tooltip.getBoundingClientRect();
+    const margin = 12;
+    const preferredLeft = rowRect.right + 12;
+    const fallbackLeft = rowRect.left - tooltipRect.width - 12;
+    const maxLeft = window.innerWidth - tooltipRect.width - margin;
+    const left = preferredLeft <= maxLeft
+      ? preferredLeft
+      : Math.max(margin, Math.min(fallbackLeft, maxLeft));
+    const maxTop = window.innerHeight - tooltipRect.height - margin;
+    const top = Math.max(margin, Math.min(rowRect.top, maxTop));
+    tooltip.style.setProperty("--home-note-tooltip-left", `${Math.round(left)}px`);
+    tooltip.style.setProperty("--home-note-tooltip-top", `${Math.round(top)}px`);
+    tooltip.classList.remove("measuring");
+  }
+
+  function homeNotesDetailHtml() {
+    const selected = selectedHomeNote();
+    const isEditable = isHomeNotesEditable();
+    const hasSelection = Boolean(state.homeNotes.selectedId);
+    const showEditor = isEditable;
+    return `
+      <div class="home-notes-detail-shell">
+        <div class="home-notes-detail-toolbar">
+          <button data-home-notes-action="new" type="button">${t("astroNotes.addNote")}</button>
+          <button data-home-notes-action="edit" type="button" ${!hasSelection || state.homeNotes.mode === "new" ? "disabled" : ""}>${t("astroNotes.edit")}</button>
+          <button data-home-notes-action="delete" type="button" ${!hasSelection || state.homeNotes.mode === "new" ? "disabled" : ""}>${t("openKundali.delete")}</button>
+          ${isEditable ? `<button class="primary" data-home-notes-action="save" type="button" ${state.homeNotes.saving ? "disabled" : ""}>${t(state.homeNotes.mode === "edit" ? "astroNotes.saveUpdate" : "astroNotes.saveNote")}</button>` : ""}
+          ${isEditable ? `<button data-home-notes-action="cancel" type="button" ${state.homeNotes.saving ? "disabled" : ""}>${t("astroNotes.cancelEdit")}</button>` : ""}
+        </div>
+        <div class="home-notes-detail-content">
+          <section class="home-notes-detail-chart-card">
+            ${homeNotesDiamondHtml()}
+          </section>
+          <section class="home-notes-detail-note-card ${showEditor ? "editing" : ""}">
+            ${showEditor ? homeNotesEditorHtml() : homeNotesFancyNoteHtml(selected)}
+          </section>
+        </div>
+        ${state.homeNotes.error ? `<div class="home-notes-detail-status error">${escapeHtml(state.homeNotes.error)}</div>` : ""}
+        ${state.homeNotes.message ? `<div class="home-notes-detail-status">${escapeHtml(state.homeNotes.message)}</div>` : ""}
+        ${state.homeNotes.planetMenu.open ? homeNotesPlanetMenuHtml() : ""}
+      </div>
+    `;
+  }
+
+  function homeNotesEditorHtml() {
+    return `
+      <label class="home-notes-editor">
+        <span>${t("astroNotes.add")}</span>
+        <textarea id="homeNotesDetailText" maxlength="1000" required>${escapeHtml(state.homeNotes.noteText || "")}</textarea>
+      </label>
+    `;
+  }
+
+  function homeNotesFancyNoteHtml(note) {
+    if (!note) {
+      return `<div class="home-notes-empty-state">${t("homeNotes.placeholder")}</div>`;
+    }
+    const paragraphs = String(state.homeNotes.noteText || note.note_text || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+    const title = paragraphs[0] || note.note_text || t("astroNotes.note");
+    const bodyParagraphs = paragraphs.length > 1 ? paragraphs.slice(1) : [];
+    return `
+      <article class="home-notes-fancy-note">
+        <div class="home-notes-fancy-note-title">${formatNoteInlineHtml(title)}</div>
+        <div class="home-notes-fancy-note-body">
+          ${bodyParagraphs.length ? bodyParagraphs.map((line) => `<p>${formatNoteInlineHtml(line)}</p>`).join("") : ""}
+        </div>
+        <div class="home-notes-fancy-note-meta">
+          <span>${escapeHtml(homeNotesMetaText(note) || "-")}</span>
+        </div>
+      </article>
+    `;
+  }
+
+  function homeNotesDiamondHtml() {
+    const slots = northDiamondHouseSlots();
+    const ascSign = Number(state.homeNotes.ascSign) || 1;
+    return `
+      <div class="home-notes-chart-wrap">
+        <svg class="astro-notes-blank-chart home-notes-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${escapeHtml(t("astroNotes.placements"))}">
+          ${slots.map((slot) => {
+            const signIndex = ((ascSign + slot.house - 2) % 12) + 1;
+            const planets = state.homeNotes.housePlanets?.[slot.house] || [];
+            return `
+              <g class="astro-notes-blank-house" data-home-note-house="${slot.house}">
+                <polygon points="${slot.points}"></polygon>
+                <text x="${slot.labelX}" y="${slot.labelY}" data-home-note-asc-sign="${signIndex}">${signIndex}</text>
+                ${homeNotesHousePlanetsHtml(slot, planets)}
+              </g>
+            `;
+          }).join("")}
+        </svg>
+      </div>
+    `;
+  }
+
+  function homeNotesHousePlanetsHtml(slot, planets) {
+    if (!planets.length) return "";
+    return planets.slice(0, 12).map((planet, index) => {
+      const position = northPlanetSlot(slot.house, index);
+      return `
+        <text class="astro-notes-house-planets ${astroNotesPlanetColorClass(planet)}" x="${formatSvgNumber(position.x)}" y="${formatSvgNumber(position.y)}" data-home-note-remove-planet="${escapeHtml(planet)}" data-home-note-remove-house="${slot.house}">
+          ${escapeHtml(shortPlanetName(planet))}
+        </text>
+      `;
+    }).join("");
+  }
+
+  function homeNotesPlanetMenuHtml() {
+    const planets = ["Sun", "Moon", "Mars", "Mercury", "Jupiter", "Venus", "Saturn", "Rahu", "Ketu", "Uranus", "Neptune", "Pluto"];
+    return `
+      <div class="astro-notes-planet-menu home-notes-planet-menu" style="left: ${state.homeNotes.planetMenu.x}px; top: ${state.homeNotes.planetMenu.y}px;">
+        ${planets.map((planet) => `<button type="button" data-home-note-planet-option="${planet}">${escapeHtml(localizedPlanetFullName(planet))}</button>`).join("")}
+      </div>
+    `;
+  }
+
+  function homeNotesSearchHtml() {
+    return `
+      <div class="home-notes-search-bar">
+        <div class="home-notes-search-top">
+          <label class="home-notes-search-box">
+            <span>S</span>
+            <input id="homeNotesSearch" value="${escapeHtml(state.homeNotes.query || "")}" placeholder="${t("homeNotes.search")}" aria-label="${t("homeNotes.search")}" />
+          </label>
+          <button class="home-notes-reset-button" data-home-notes-reset type="button" title="${t("common.clear")}" aria-label="${t("common.clear")}">x</button>
+          ${homeNotesCollapseButtonHtml()}
+        </div>
+      </div>
+    `;
+  }
+
+  function homeNotesMetaText(note) {
+    const parts = [];
+    if (note.asc_sign) parts.push(`Asc ${note.asc_sign}`);
+    if (Array.isArray(note.placements) && note.placements.length) parts.push(`${note.placements.length} placements`);
+    const updatedAt = formatAstroNotesDateTime(note.updated_at || note.created_at);
+    if (updatedAt) parts.push(updatedAt);
+    return parts.join(" | ");
+  }
+
+  function homeNotesPaginationHtml() {
+    const page = Math.max(1, Number(state.homeNotes.page) || 1);
+    const totalPages = Math.max(1, Number(state.homeNotes.totalPages) || Math.ceil((state.homeNotes.totalRecords || 0) / state.homeNotes.rowsPerPage) || 1);
+    const total = Number(state.homeNotes.totalRecords) || 0;
+    return `
+      <div class="home-notes-pagination">
+        <button class="astro-notes-page-icon-button" type="button" data-home-notes-page="prev" title="${t("openKundali.previous")}" aria-label="${t("openKundali.previous")}" ${page <= 1 || state.homeNotes.loading ? "disabled" : ""}>
+          &lt;
+        </button>
+        <span class="home-notes-page-message">
+          <strong>${t("openKundali.page")} ${page} ${t("openKundali.of")} ${totalPages}</strong>
+          <em>${t("openKundali.total")}:${total} ${t("openKundali.records")}</em>
+        </span>
+        <button class="astro-notes-page-icon-button" type="button" data-home-notes-page="next" title="${t("openKundali.next")}" aria-label="${t("openKundali.next")}" ${page >= totalPages || state.homeNotes.loading ? "disabled" : ""}>
+          &gt;
+        </button>
+      </div>
+    `;
+  }
+
+  function searchKundaliPlaceholderHtml() {
+    const isCollapsed = state.searchKundali.sectionACollapsed;
+    return `
+      <div class="search-kundali-page ${isCollapsed ? "search-kundali-page-collapsed" : ""}">
+        <section class="search-kundali-section-a" aria-label="${t("searchKundali.sectionA")}">
+          <div class="search-kundali-section-a-top">
+            ${isCollapsed ? "" : searchKundaliSearchBoxHtml("name")}
+            ${isCollapsed ? "" : searchKundaliSearchBoxHtml("note")}
+            <button class="search-kundali-section-toggle" data-search-kundali-section-toggle type="button" title="${t(isCollapsed ? "searchKundali.expand" : "searchKundali.collapse")}" aria-label="${t(isCollapsed ? "searchKundali.expand" : "searchKundali.collapse")}">
+              ${isCollapsed ? "&gt;" : "&lt;"}
+            </button>
+          </div>
+          <div class="search-kundali-section-a-bottom ${isCollapsed ? "hidden" : ""}">
+            ${searchKundaliListHtml()}
+          </div>
+        </section>
+        <section class="search-kundali-section-b" aria-label="${t("searchKundali.sectionB")}">
+          ${searchKundaliPreviewHtml()}
+        </section>
+      </div>
+    `;
+  }
+
+  function searchKundaliSearchBoxHtml(type) {
+    const isNote = type === "note";
+    const inputId = isNote ? "searchKundaliNoteInput" : "searchKundaliNameInput";
+    const value = isNote ? state.searchKundali.noteQuery : state.searchKundali.nameQuery;
+    return `
+      <label class="search-kundali-field">
+        <span>${t(isNote ? "searchKundali.searchNote" : "searchKundali.searchName")}</span>
+        <div class="search-kundali-input-row">
+          <input id="${inputId}" data-search-kundali-input="${type}" value="${escapeHtml(value)}" autocomplete="off" />
+          <button class="search-kundali-clear" data-search-kundali-clear="${type}" type="button" title="${t("common.clear")}" aria-label="${t("common.clear")}">x</button>
+        </div>
+        ${state.searchKundali.activeSearchType === type && state.searchKundali.suggestionOpen ? searchKundaliSuggestionsHtml() : ""}
+      </label>
+    `;
+  }
+
+  function searchKundaliSuggestionsHtml() {
+    const suggestions = state.searchKundali.suggestions || [];
+    if (!suggestions.length) {
+      return `<div class="search-kundali-suggestions"><div class="search-kundali-suggestion-empty">${t("openKundali.noRecords")}</div></div>`;
+    }
+    return `
+      <div class="search-kundali-suggestions">
+        ${suggestions.map((record) => {
+          const id = record.jatak_id || record.id;
+          return `
+            <button data-search-kundali-suggestion="${escapeHtml(String(id || ""))}" type="button">
+              <strong>${escapeHtml(record.jatak_full_name || "")}</strong>
+              <span>${escapeHtml([record.date, record.time, record.city_name].filter(Boolean).join(" | "))}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function searchKundaliListHtml() {
+    const rows = state.searchKundali.records || [];
+    return `
+      <div class="search-kundali-list">
+        <div class="search-kundali-list-body">
+          ${state.searchKundali.loading ? `<div class="chart-state">${t("common.loading")}</div>` : ""}
+          ${state.searchKundali.error ? `<div class="chart-state error">${escapeHtml(state.searchKundali.errorKey ? t(state.searchKundali.errorKey) : state.searchKundali.error)}</div>` : ""}
+          ${!state.searchKundali.loading && !state.searchKundali.error && !rows.length ? `<div class="chart-state">${t("openKundali.noRecords")}</div>` : ""}
+          ${!state.searchKundali.loading && !state.searchKundali.error ? rows.map(searchKundaliRecordHtml).join("") : ""}
+        </div>
+        ${searchKundaliPaginationHtml()}
+      </div>
+    `;
+  }
+
+  function searchKundaliRecordHtml(record) {
+    const name = record.jatak_full_name || record.name || "-";
+    const date = record.date || "-";
+    const time = record.time || "-";
+    const city = record.city_name || record.city || "-";
+    const note = record.note1 || "";
+    const id = record.jatak_id || record.id || "";
+    return `
+      <article class="search-kundali-record ${note ? "has-note" : ""}">
+        <button class="search-kundali-name-link" data-search-kundali-record="${escapeHtml(String(id))}" type="button">${escapeHtml(name)}</button>
+        <i>|</i>
+        <span>${escapeHtml(date)} ${escapeHtml(time)}</span>
+        <i>|</i>
+        <em>${escapeHtml(city)}</em>
+        ${note ? `<div class="search-kundali-note-tooltip">${formatNoteBlockHtml(note)}</div>` : ""}
+      </article>
+    `;
+  }
+
+  function searchKundaliPaginationHtml() {
+    const total = Number(state.searchKundali.totalRecords) || 0;
+    const totalPages = Math.max(1, Number(state.searchKundali.totalPages) || Math.ceil(total / state.searchKundali.rowsPerPage));
+    const page = Math.min(Math.max(1, Number(state.searchKundali.page) || 1), totalPages);
+    return `
+      <div class="search-kundali-pagination">
+        <button class="search-kundali-page-button" data-search-kundali-page="-1" type="button" title="${t("openKundali.previous")}" aria-label="${t("openKundali.previous")}" ${page <= 1 ? "disabled" : ""}>&lt;</button>
+        <strong>${t("openKundali.page")} ${page} ${t("openKundali.of")} ${totalPages}</strong>
+        <span>${t("openKundali.total")}:${total} ${t("openKundali.records")}</span>
+        <button class="search-kundali-page-button" data-search-kundali-page="1" type="button" title="${t("openKundali.next")}" aria-label="${t("openKundali.next")}" ${page >= totalPages ? "disabled" : ""}>&gt;</button>
+      </div>
+    `;
+  }
+
+  function searchKundaliPreviewHtml() {
+    const selected = state.searchKundali.selected || {};
+    if (selected.loading) {
+      return `<div class="search-kundali-preview-state chart-state">${t("chart.loading")}</div>`;
+    }
+    if (selected.error) {
+      return `<div class="search-kundali-preview-state chart-state error">${selected.errorKey ? t(selected.errorKey) : escapeHtml(selected.error)}</div>`;
+    }
+    if (!selected.jatakId) {
+      return `<div class="search-kundali-preview-state">${t("searchKundali.selectRecord")}</div>`;
+    }
+    if (state.searchKundali.activeTool === "ashtakvarga") {
+      return ashtakVargaSectionHtml();
+    }
+    if (state.searchKundali.activeTool === "nakshatra-naadi") {
+      return kundaliNakshatraNaadiSectionHtml();
+    }
+    if (state.searchKundali.activeTool === "jaimini-kundali") {
+      return searchKundaliJaiminiPlaceholderHtml();
+    }
+    return `
+      <div class="search-kundali-preview">
+        <div class="kundali-section-charts">
+          <div class="kundali-section-chart-stack">
+            ${kundaliImageChartBlockForHtml(selected, "d1", selected.d1Chart || "D1")}
+            ${kundaliImageChartBlockForHtml(selected, "d9", selected.d9Chart || "D9")}
+          </div>
+          <div class="kundali-section-details">
+            <div class="kundali-section-planet-details">
+              <div class="current-gochar-planet-title">${t("chart.planetaryDetail")}</div>
+              <div class="current-gochar-planet-body">${savedPlanetaryDetailForHtml(selected)}</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+
+  function rightRailToolsHtml() {
+    if (!(state.headingChoice === "home" && state.homeView === "search-kundali" && state.searchKundali.selected?.jatakId)) {
+      return "";
+    }
+    return searchKundaliRightRailToolsHtml();
+  }
+
+  function searchKundaliRightRailToolsHtml() {
+    const actions = [
+      { key: "kundali", labelKey: "searchKundali.action.vedicKundali", image: "./src/images/kundali1.jpg" },
+      { key: "jaimini-kundali", labelKey: "searchKundali.action.jaiminiKundali", image: "./src/images/jaimini.jpg" },
+      { key: "ashtakvarga", labelKey: "searchKundali.action.ashtakvarga", image: "./src/images/BinduKundali.png" },
+      { key: "strength", labelKey: "searchKundali.action.strength", image: "./src/images/shadbala.jpg" },
+      { key: "nakshatra-naadi", labelKey: "searchKundali.action.nakshatraNaadi", image: "./src/images/nakshatra.jpg" },
+      { key: "tbd2", labelKey: "searchKundali.action.tbd2", image: "./src/images/icon-kundali.svg" },
+      { key: "tbd3", labelKey: "searchKundali.action.tbd3", image: "./src/images/icon-kundali.svg" },
+    ];
+    return `
+      <div class="search-kundali-tool-drawer" aria-label="${t("searchKundali.moreTools")}">
+        <div class="search-kundali-tool-dots" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </div>
+        <div class="search-kundali-preview-actions">
+          ${actions.map((action) => `
+            <div class="search-kundali-preview-action-wrap">
+              <button class="search-kundali-preview-action ${(state.searchKundali.activeTool === action.key) || (!state.searchKundali.activeTool && action.key === "kundali") ? "active" : ""}" data-search-kundali-tool="${escapeHtml(action.key)}" type="button" title="${t(action.labelKey)}" aria-label="${t(action.labelKey)}">
+                <img src="${escapeHtml(action.image)}" alt="" />
+                <span>${t(action.labelKey)}</span>
+              </button>
+            </div>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function searchKundaliJaiminiPlaceholderHtml() {
+    const selected = state.searchKundali.selected || {};
+    return `
+      <div class="search-kundali-jaimini-page">
+        <div class="search-kundali-jaimini-chart-stack">
+          ${searchKundaliChartPickerHtml("d1", selected.d1Chart || "D1")}
+          ${jaiminiImageChartForHtml(selected)}
+        </div>
+        ${jaiminiSideDetailsHtml(selected)}
+      </div>
+    `;
+  }
+
+  function jaiminiSideDetailsHtml(view) {
+    const panels = [
+      {
+        key: "planetary",
+        shortLabel: "PL",
+        title: t("chart.planetaryDetail"),
+        body: savedPlanetaryDetailForHtml(view),
+      },
+      {
+        key: "jaimini",
+        shortLabel: "JM",
+        title: t("jaimini.detailsTitle"),
+        body: jaiminiDetailTableHtml(view),
+      },
+    ];
+    const activeKey = panels.some((panel) => panel.key === state.searchKundali.jaiminiInfoTab)
+      ? state.searchKundali.jaiminiInfoTab
+      : "planetary";
+    const activePanel = panels.find((panel) => panel.key === activeKey) || panels[0];
+    return `
+      <section class="search-kundali-jaimini-details">
+        <div class="jaimini-info-tabs" role="tablist" aria-label="${t("jaimini.detailsTitle")}">
+          ${panels.map((panel) => `
+            <button class="${panel.key === activeKey ? "active" : ""}" data-jaimini-info-tab="${panel.key}" type="button" role="tab" aria-selected="${panel.key === activeKey ? "true" : "false"}" title="${escapeHtml(panel.title)}" aria-label="${escapeHtml(panel.title)}">
+              ${escapeHtml(panel.shortLabel)}
+            </button>
+        `).join("")}
+          <span class="jaimini-info-active-label">${escapeHtml(activePanel.title)}</span>
+        </div>
+        <div class="current-gochar-planet-body jaimini-info-tab-body">${activePanel.body}</div>
+      </section>
+    `;
+  }
+
+  function jaiminiImageChartForHtml(view) {
+    if (view.loading || view.jaiminiLoading) {
+      return `<div class="search-kundali-jaimini-chart chart-state">${t("chart.loading")}</div>`;
+    }
+    if (view.error || view.jaiminiError) {
+      return `<div class="search-kundali-jaimini-chart chart-state error">${view.jaiminiErrorKey ? t(view.jaiminiErrorKey) : view.errorKey ? t(view.errorKey) : escapeHtml(view.jaiminiError || view.error)}</div>`;
+    }
+    if (!view.jaimini) {
+      return `<div class="search-kundali-jaimini-chart chart-state">${t("chart.waiting")}</div>`;
+    }
+
+    const houses = buildJaiminiChartHouses(view);
+    return `
+      <div class="search-kundali-jaimini-chart">
+        <img src="./src/images/blank_kundali.jpg" alt="" />
+        <svg viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${t("searchKundali.action.jaiminiKundali")}">
+          ${jaiminiDiamondSlots().map((slot) => {
+            const house = houses[slot.house - 1] || { sign_index: "", bodies: [] };
+            return `
+              <g>
+                ${jaiminiHouseNumberHtml(slot, house.sign_index)}
+                ${jaiminiHouseBodiesHtml(slot, house.bodies)}
+              </g>
+            `;
+          }).join("")}
+        </svg>
+      </div>
+    `;
+  }
+
+  function jaiminiHouseNumberHtml(slot, houseNumber) {
+    const position = jaiminiSignPosition(slot.house, [slot.x, slot.y]);
+    return `<text class="jaimini-chart-house-number" x="${formatSvgNumber(position[0])}" y="${formatSvgNumber(position[1])}">${houseNumber || ""}</text>`;
+  }
+
+  function jaiminiHouseBodiesHtml(slot, bodies) {
+    const visibleLimit = JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT;
+    const visibleBodies = bodies.slice(0, visibleLimit);
+    const overflowCount = bodies.length - visibleBodies.length;
+    const labels = overflowCount > 0 ? [...visibleBodies.slice(0, visibleLimit - 1), `+${overflowCount + 1}`] : visibleBodies;
+    return labels
+      .map((body, index) => {
+        const position = jaiminiPlanetSlot(slot.house, index);
+        return body?.isJaimini
+          ? jaiminiPointLabelHtml(body, formatSvgNumber(position.x), formatSvgNumber(position.y))
+          : northPlanetLabelHtml(body, formatSvgNumber(position.x), formatSvgNumber(position.y));
+      })
+      .join("");
+  }
+
+  function jaiminiPointLabelHtml(body, x, y) {
+    const label = String(body?.label || body?.name || "").trim();
+    const degree = planetDegreeLabel(body?.degree);
+    return `
+      <text class="diamond-house-body jaimini-point-label" x="${x}" y="${y}">
+        <tspan>${escapeHtml(label)}</tspan>${degree ? `<tspan class="planet-degree-sup" dx="0.35" dy="-1.4">${degree}</tspan>` : ""}
+      </text>
+    `;
+  }
+
+  function buildJaiminiChartHouses(view) {
+    const selectedChart = view.d1;
+    const chartHouses = selectedChart ? buildSavedChartHouses(selectedChart) : [];
+    const houses = Array.from({ length: 12 }, (_, index) => {
+      const chartHouse = chartHouses[index] || {};
+      return {
+        house: index + 1,
+        sign_index: chartHouse.sign_index || "",
+        bodies: chartHouse.bodies || [],
+      };
+    });
+
+    jaiminiChartOverlayItems(view, houses).forEach((item) => {
+      const houseNumber = Number(item.house) || houseForSignIndexInHouses(houses, item.sign_index);
+      if (!houseNumber || houseNumber < 1 || houseNumber > 12) return;
+      houses[houseNumber - 1].sign_index = houses[houseNumber - 1].sign_index || item.sign_index || "";
+      const degreeValue = item.degree_in_sign === "" || item.degree_in_sign === null || item.degree_in_sign === undefined
+        ? NaN
+        : Number(item.degree_in_sign);
+      houses[houseNumber - 1].bodies.push({
+        isJaimini: true,
+        label: item.label,
+        name: item.label,
+        degree: degreeValue,
+        retrograde: false,
+      });
+    });
+    return houses;
+  }
+
+  function jaiminiChartOverlayItems(view, houses) {
+    const jaimini = view.jaimini || {};
+    const items = [];
+    Object.values(jaimini.padas || {}).forEach((pada) => {
+      items.push({
+        label: pada.pada_key || "",
+        sign_index: pada.sign_index || "",
+        house: houseForSignIndexInHouses(houses, pada.sign_index) || pada.house || "",
+        degree_in_sign: "",
+      });
+    });
+    Object.values(jaimini.special_lagnas || {}).forEach((lagna) => {
+      items.push({
+        label: lagna.lagna_key || "",
+        sign_index: lagna.sign_index || "",
+        house: houseForSignIndexInHouses(houses, lagna.sign_index) || lagna.house || "",
+        degree_in_sign: lagna.degree_in_sign ?? "",
+      });
+    });
+    ["gulika", "mandi"].forEach((key) => {
+      const value = jaimini[key];
+      if (!value) return;
+      items.push({
+        label: t(key === "gulika" ? "jaimini.chart.gulika" : "jaimini.chart.mandi"),
+        sign_index: value.sign_index || "",
+        house: houseForSignIndexInHouses(houses, value.sign_index) || value.house || "",
+        degree_in_sign: value.degree_in_sign ?? "",
+      });
+    });
+    return items.filter((item) => item.label);
+  }
+
+  function jaiminiJaiminiChartItems(view) {
+    const jaimini = view.jaimini || {};
+    const items = [];
+    Object.values(jaimini.charakarakas || {}).forEach((karaka) => {
+      const placement = findPositionForPlanetKey(view, karaka.planet_key || karaka.planet_name);
+      const house = placement ? houseForSignIndex(view, placement.sign_index) : null;
+      items.push({
+        group: "Chara Karaka",
+        label: karaka.abbreviation || karaka.planet_name || karaka.planet_key || "",
+        name: karaka.planet_name || karaka.planet_key || "",
+        sign: placement?.sign || "",
+        sign_index: placement?.sign_index || "",
+        house,
+        degree_in_sign: karaka.degree_in_sign ?? placement?.degree_in_sign,
+      });
+    });
+    Object.values(jaimini.padas || {}).forEach((pada) => {
+      items.push({
+        group: "Pada",
+        label: pada.pada_key || "",
+        name: pada.name || "",
+        sign: pada.sign || "",
+        sign_index: pada.sign_index || "",
+        house: pada.house || "",
+        degree_in_sign: "",
+      });
+    });
+    Object.values(jaimini.special_lagnas || {}).forEach((lagna) => {
+      items.push({
+        group: "Special Lagna",
+        label: lagna.lagna_key || "",
+        name: lagna.name || "",
+        sign: lagna.sign || "",
+        sign_index: lagna.sign_index || "",
+        house: lagna.house || "",
+        degree_in_sign: lagna.degree_in_sign ?? "",
+      });
+    });
+    ["gulika", "mandi"].forEach((key) => {
+      const value = jaimini[key];
+      if (!value) return;
+      items.push({
+        group: "Special Point",
+        label: key === "gulika" ? "Gul" : "Man",
+        name: key === "gulika" ? "Gulika" : "Mandi",
+        sign: value.sign || "",
+        sign_index: value.sign_index || "",
+        house: value.house || "",
+        degree_in_sign: value.degree_in_sign ?? "",
+      });
+    });
+    return items.filter((item) => item.label || item.name);
+  }
+
+  function findPositionForPlanetKey(view, planetKey) {
+    const key = normalizePlanetKey(planetKey);
+    const positions = Object.values(view.positions?.positions || view.positions || {});
+    return positions.find((position) => normalizePlanetKey(position.name || position.body) === key) || null;
+  }
+
+  function normalizePlanetKey(value) {
+    const key = String(value || "").trim().toLowerCase();
+    const aliases = {
+      sani: "saturn",
+      shani: "saturn",
+      budha: "mercury",
+      mangala: "mars",
+      mangal: "mars",
+      guru: "jupiter",
+      chandra: "moon",
+      surya: "sun",
+      sukra: "venus",
+      shukra: "venus",
+    };
+    return aliases[key] || key;
+  }
+
+  function houseForSignIndex(view, signIndex) {
+    const d1Houses = view.d1 ? buildSavedChartHouses(view.d1) : [];
+    const house = d1Houses.find((item) => Number(item.sign_index) === Number(signIndex));
+    return house?.house || "";
+  }
+
+  function houseForSignIndexInHouses(houses, signIndex) {
+    const house = houses.find((item) => Number(item.sign_index) === Number(signIndex));
+    return house?.house || "";
+  }
+
+  function jaiminiDetailTableHtml(view) {
+    if (view.jaiminiLoading) return `<div class="chart-state">${t("chart.loading")}</div>`;
+    if (view.jaiminiError) return `<div class="chart-state error">${view.jaiminiErrorKey ? t(view.jaiminiErrorKey) : escapeHtml(view.jaiminiError)}</div>`;
+    const rows = jaiminiJaiminiChartItems(view).filter((row) => row.group === "Chara Karaka");
+    if (!rows.length) {
+      return `<div class="chart-state">${t("chart.waiting")}</div>`;
+    }
+    return `
+      <div class="planetary-detail-table-wrap jaimini-detail-table-wrap">
+        <table class="planetary-detail-table jaimini-detail-table">
+          <thead>
+            <tr>
+              <th>${t("jaimini.type")}</th>
+              <th>${t("jaimini.key")}</th>
+              <th>${t("jaimini.name")}</th>
+              <th>${t("planetTable.sign")}</th>
+              <th>${t("chartLayout.house")}</th>
+              <th>${t("planetTable.degree")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows.map((row) => `
+              <tr>
+                <td>${escapeHtml(localizedJaiminiValue(row.group, "group"))}</td>
+                <td>${escapeHtml(localizedJaiminiValue(row.label, "key"))}</td>
+                <td>${escapeHtml(localizedJaiminiValue(row.name, "name"))}</td>
+                <td>${row.sign_index ? localizedSignName(row.sign_index) : escapeHtml(row.sign || "-")}</td>
+                <td>${row.house || "-"}</td>
+                <td>${row.degree_in_sign !== "" && row.degree_in_sign !== null && row.degree_in_sign !== undefined ? formatDegreeDms(row.degree_in_sign) : "-"}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    `;
+  }
+
+  function localizedJaiminiValue(value, type = "name") {
+    const text = String(value || "").trim();
+    if (!text) return "-";
+    const normalized = text.toLowerCase().replace(/[^a-z0-9]+/g, "");
+    const translationKey = `jaimini.${type}.${normalized}`;
+    const translated = t(translationKey);
+    if (translated !== translationKey) return translated;
+    if (type === "name") return planetDetailName(text);
+    return text;
+  }
+
+  function kundaliImageChartBlockForHtml(view, chartKey, selectedChart) {
+    return `
+      <div class="kundali-image-chart-block">
+        ${searchKundaliChartPickerHtml(chartKey, selectedChart)}
+        ${kundaliImageChartForHtml(view, chartKey)}
+      </div>
+    `;
+  }
+
+  function searchKundaliChartPickerHtml(chartKey, selectedValue) {
+    const options = kundaliSectionChartOptions();
+    const selected = options.find((option) => option.value === selectedValue) || options[0];
+    return `
+      <details class="kundali-chart-picker chart-mini-picker chart-mini-picker-chart">
+        <summary aria-label="${t("chart.selectChart")}">
+          <strong>${escapeHtml(selected.label)}</strong>
+          <em>${escapeHtml(selected.subLabel)}</em>
+        </summary>
+        <div class="chart-mini-picker-menu">
+          ${options.map((option) => `
+            <button class="${option.value === selectedValue ? "active" : ""}" data-search-kundali-chart-key="${chartKey}" data-search-kundali-chart-choice="${escapeHtml(option.value)}" type="button">
+              <strong>${escapeHtml(option.label)}</strong>
+              <span>${escapeHtml(option.subLabel)}</span>
+            </button>
+          `).join("")}
+        </div>
+      </details>
+    `;
   }
 
   function kundaliSectionButtonsHtml() {
@@ -1446,7 +2512,6 @@
     const selected = state.ashtakVarga.selectedPlanet || "";
     return `
       <div class="ashtak-varga-page">
-        <div class="kundali-jatak-name-badge ashtak-varga-jatak-badge">${kundaliJatakSummaryHtml()}</div>
         <div class="ashtak-varga-planet-strip" aria-label="${t("kundaliSection.ashtakVarga")}">
           ${planets.map((planet) => `
             <button class="ashtak-planet-button ${selected === planet.key ? "active" : ""}" data-action="ashtak-planet" data-ashtak-planet="${escapeHtml(planet.key)}" type="button" title="${escapeHtml(ashtakPlanetLabel(planet.key))}">
@@ -1464,6 +2529,7 @@
 
   function ashtakVargaPlanets() {
     return [
+      ["sarva", "./src/images/sarvashtakvarg.png"],
       ["sun", "./src/images/sun1.png"],
       ["moon", "./src/images/moon1.jpg"],
       ["mars", "./src/images/mars1.jpg"],
@@ -1475,6 +2541,7 @@
   }
 
   function ashtakPlanetLabel(planetKey) {
+    if (planetKey === "sarva") return t("ashtakVarga.sarvashtakVarg");
     return `${t(`ashtakVarga.planet.${planetKey}`)} ${t("ashtakVarga.ashtakSuffix")}`.trim();
   }
 
@@ -1501,7 +2568,8 @@
   }
 
   function ashtakVargaChartHtml() {
-    const houses = buildSavedChartHouses(state.jatakView.rasi || state.jatakView.d1 || {});
+    const sourceView = ashtakVargaSourceView();
+    const houses = buildSavedChartHouses(sourceView.rasi || sourceView.d1 || {});
     const pointsBySign = ashtakVargaPointsBySign(state.ashtakVarga.data);
     const slots = northDiamondSlots();
     return `
@@ -1515,7 +2583,7 @@
             return `
               <g>
                 ${northHouseNumberHtml(slot, signIndex, "ashtakVarga")}
-                ${ashtakVargaPointBadgeHtml(slot.x, slot.y, point)}
+                ${ashtakVargaPointBadgeHtml(slot.x, slot.y, point, state.ashtakVarga.selectedPlanet)}
               </g>
             `;
           }).join("")}
@@ -1525,13 +2593,14 @@
   }
 
   async function loadAshtakVarga(planetKey) {
-    if (!state.jatakView.jatakId || !planetKey) return;
+    const sourceView = ashtakVargaSourceView();
+    if (!sourceView.jatakId || !planetKey) return;
     state.ashtakVarga.loading = true;
     state.ashtakVarga.error = "";
     state.ashtakVarga.errorKey = "";
     render();
     try {
-      state.ashtakVarga.data = await getJson(`/jatak/${encodeURIComponent(state.jatakView.jatakId)}/ashtakavarga/${encodeURIComponent(planetKey)}`, "ashtakVarga.loadError");
+      state.ashtakVarga.data = await getJson(`/jatak/${encodeURIComponent(sourceView.jatakId)}/ashtakavarga/${encodeURIComponent(planetKey)}`, "ashtakVarga.loadError");
     } catch (error) {
       state.ashtakVarga.error = error.message || t("ashtakVarga.loadError");
       state.ashtakVarga.errorKey = error.messageKey || "ashtakVarga.loadError";
@@ -1539,6 +2608,40 @@
       state.ashtakVarga.loading = false;
       render();
     }
+  }
+
+  function selectDefaultAshtakVarga() {
+    state.ashtakVarga.selectedPlanet = "sarva";
+    state.ashtakVarga.data = null;
+    state.ashtakVarga.error = "";
+    state.ashtakVarga.errorKey = "";
+    render();
+    loadAshtakVarga("sarva");
+  }
+
+  function ashtakVargaSourceView() {
+    if (state.headingChoice === "home" && state.homeView === "search-kundali" && state.searchKundali.activeTool === "ashtakvarga") {
+      return state.searchKundali.selected || {};
+    }
+    return state.jatakView;
+  }
+
+  function isSearchKundaliTool(toolKey) {
+    return state.headingChoice === "home" && state.homeView === "search-kundali" && state.searchKundali.activeTool === toolKey;
+  }
+
+  function nakshatraNaadiSourceView() {
+    return isSearchKundaliTool("nakshatra-naadi") ? (state.searchKundali.selected || {}) : state.jatakView;
+  }
+
+  function dashaSourceView() {
+    const view = isSearchKundaliTool("nakshatra-naadi") ? (state.searchKundali.selected || {}) : state.jatakView;
+    if (!view.dasha) view.dasha = defaultDashaState();
+    return view;
+  }
+
+  function isKundaliNakshatraContext() {
+    return (state.headerActiveMenu === "open-kundali" && state.jatakView.kundaliSection === "nakshatra-naadi") || isSearchKundaliTool("nakshatra-naadi");
   }
 
   function ashtakVargaPointsBySign(data) {
@@ -1611,10 +2714,10 @@
           <tbody>
             ${rows.map((row) => `
               <tr>
-                <th>${escapeHtml(localizedPlanetFullName(row.planet))}</th>
+                <th>${escapeHtml(ashtakVargaTablePlanetLabel(row.planet))}</th>
                 ${Array.from({ length: 12 }, (_, index) => {
                   const value = row.points.get(index + 1);
-                  return `<td class="${ashtakVargaPointClass(value)}">${value === undefined || value === null || value === "" ? "-" : escapeHtml(String(value))}</td>`;
+                  return `<td class="${ashtakVargaPointClass(value, row.planet)}">${value === undefined || value === null || value === "" ? "-" : escapeHtml(String(value))}</td>`;
                 }).join("")}
               </tr>
             `).join("")}
@@ -1650,6 +2753,10 @@
         return (firstIndex === -1 ? 99 : firstIndex) - (secondIndex === -1 ? 99 : secondIndex);
       })
       .map(([planet, points]) => ({ planet, points }));
+  }
+
+  function ashtakVargaTablePlanetLabel(planetKey) {
+    return planetKey === "sarva" ? t("ashtakVarga.sarvashtakVarg") : localizedPlanetFullName(planetKey);
   }
 
   function collectAshtakTableCandidates(data) {
@@ -1688,19 +2795,24 @@
     return candidates;
   }
 
-  function ashtakVargaPointClass(value) {
+  function ashtakVargaPointClass(value, ashtakType = state.ashtakVarga.selectedPlanet) {
     const point = Number(value);
     if (!Number.isFinite(point)) return "";
+    if (ashtakType === "sarva") {
+      if (point <= 23) return "ashtak-point-low";
+      if (point <= 30) return "ashtak-point-mid";
+      return "ashtak-point-high";
+    }
     if (point <= 3) return "ashtak-point-low";
     if (point === 4) return "ashtak-point-mid";
     return "ashtak-point-high";
   }
 
-  function ashtakVargaPointBadgeHtml(x, y, value) {
+  function ashtakVargaPointBadgeHtml(x, y, value, ashtakType = state.ashtakVarga.selectedPlanet) {
     if (value === "" || value === undefined || value === null) {
       return `<text class="ashtak-varga-point-empty" x="${formatSvgNumber(x)}" y="${formatSvgNumber(y)}">-</text>`;
     }
-    const className = ashtakVargaPointClass(value);
+    const className = ashtakVargaPointClass(value, ashtakType);
     return `
       <g class="ashtak-varga-point-badge ${className}">
         <circle cx="${formatSvgNumber(x)}" cy="${formatSvgNumber(y)}" r="3.15"></circle>
@@ -1795,7 +2907,6 @@
           ${kundaliImageChartBlockHtml("d9", bottomChart, isBtr)}
         </div>
         <div class="kundali-section-details">
-          <div class="kundali-jatak-name-badge">${kundaliJatakSummaryHtml()}</div>
           <div class="kundali-section-planet-details">
             <div class="current-gochar-planet-title">${t("chart.planetaryDetail")}</div>
             <div class="current-gochar-planet-body">${savedPlanetaryDetailHtml()}</div>
@@ -1844,18 +2955,27 @@
   }
 
   function kundaliNakshatraNaadiSectionHtml() {
+    const sourceView = nakshatraNaadiSourceView();
     const topChart = state.chartHeaderChoices.d1.chart || "D1";
     const bottomChart = state.chartHeaderChoices.d9.chart || "CHALIT";
     return `
       <div class="kundali-nakshatra-section">
         <div class="kundali-nakshatra-chart">
-          ${kundaliImageChartBlockHtml("d1", topChart, true)}
-          ${kundaliImageChartBlockHtml("d9", bottomChart, true)}
+          ${kundaliNakshatraChartBlockHtml(sourceView, "d1", topChart)}
+          ${kundaliNakshatraChartBlockHtml(sourceView, "d9", bottomChart)}
         </div>
         <div class="kundali-nakshatra-content">
-          <div class="kundali-jatak-name-badge">${kundaliJatakSummaryHtml()}</div>
           ${nakshatraNaadiHtml()}
         </div>
+      </div>
+    `;
+  }
+
+  function kundaliNakshatraChartBlockHtml(view, chartKey, selectedChart) {
+    return `
+      <div class="kundali-image-chart-block">
+        ${kundaliChartPickerHtml(chartKey, selectedChart, true)}
+        ${kundaliImageChartForHtml(view, chartKey)}
       </div>
     `;
   }
@@ -1870,11 +2990,16 @@
   }
 
   function kundaliJatakSummaryHtml() {
-    const details = state.jatakView.birthDetails || {};
+    return kundaliJatakSummaryForHtml(state.jatakView);
+  }
+
+  function kundaliJatakSummaryForHtml(view) {
+    const details = view.birthDetails || {};
+    const dateTimeLabel = view.dateTimeLabel || "";
     const parts = [
-      [t("kundali.fullName"), details.jatak_full_name || state.jatakView.jatakName || "-"],
-      [t("kundali.date"), details.date || formatDisplayDateOnly(state.jatakView.dateTimeLabel) || "-"],
-      [t("kundali.time"), details.time || formatTimeWithSeconds(state.jatakView.dateTimeLabel) || "-"],
+      [t("kundali.fullName"), details.jatak_full_name || view.jatakName || "-"],
+      [t("kundali.date"), details.date || formatDisplayDateOnly(dateTimeLabel) || "-"],
+      [t("kundali.time"), details.time || formatTimeWithSeconds(dateTimeLabel) || "-"],
       [t("kundali.city"), details.city_name || details.city || "-"],
     ];
     return parts
@@ -1913,21 +3038,41 @@
 
   function kundaliSectionChartOptions() {
     return [
-      { value: "D1", label: "D1 - Chart", subLabel: "Birth Chart" },
-      { value: "D9", label: "D9 - Chart", subLabel: "Navamsha Chart" },
-      { value: "CHALIT", label: "Chalit Chart", subLabel: "Bhav Chalit" },
+      { value: "D1", label: "Birth Chart", subLabel: "D1 - Body, Physical Matters and all General Matters" },
+      { value: "CHALIT", label: "Chalit Chart", subLabel: "Chalit - Body, Physical Matters and all General Matters" },
+      { value: "D2", label: "Hora Chart", subLabel: "D2 - Wealth, Family" },
+      { value: "D3", label: "Dreshkan Chart", subLabel: "D3 - Siblings, Nature" },
+      { value: "D4", label: "Chathurthamsha Chart", subLabel: "D4 - Fortune and Property" },
+      { value: "D5", label: "Panchmansha Chart", subLabel: "D5 - Fame and Power" },
+      { value: "D7", label: "Saptamansha Chart", subLabel: "D7 - Children/Progeny" },
+      { value: "D8", label: "Ashtamansha Chart", subLabel: "D8 - Unexpected Troubles" },
+      { value: "D9", label: "Navamansha Chart", subLabel: "D9 - Wife, Dharma and Relationships" },
+      { value: "D10", label: "Dashamansha Chart", subLabel: "D10 - Actions in Society, Profession" },
+      { value: "D12", label: "Dwadashamsha Chart", subLabel: "D12 - Parents" },
+      { value: "D16", label: "Shodashamsha Chart", subLabel: "D16 - Vehicles, Travelling and Comforts" },
+      { value: "D20", label: "Vishamansha Chart", subLabel: "D20 - Spiritual Pursuits" },
+      { value: "D24", label: "Chaturvimshamsha Chart", subLabel: "D24 - Education, Learning and Knowledge" },
+      { value: "D27", label: "Bhamsha Chart", subLabel: "D27 - Strengths and Weakness" },
+      { value: "D30", label: "Trishamansha Chart", subLabel: "D30 - Evils, Failure, Bad Luck" },
+      { value: "D40", label: "Khavedamsha Chart", subLabel: "D40 - Maternal Legacy" },
+      { value: "D45", label: "Akshvedansha Chart", subLabel: "D45 - Paternal Legacy" },
+      { value: "D60", label: "Shashtymsha Chart", subLabel: "D60 - Past birth or Karma" },
     ];
   }
 
   function kundaliImageChartHtml(chartKey) {
-    if (state.jatakView.loading) {
+    return kundaliImageChartForHtml(state.jatakView, chartKey);
+  }
+
+  function kundaliImageChartForHtml(view, chartKey) {
+    if (view.loading || view[`${chartKey}Loading`]) {
       return `<div class="kundali-image-chart chart-state">${t("chart.loading")}</div>`;
     }
-    if (state.jatakView.error) {
-      return `<div class="kundali-image-chart chart-state error">${state.jatakView.errorKey ? t(state.jatakView.errorKey) : state.jatakView.error}</div>`;
+    if (view.error) {
+      return `<div class="kundali-image-chart chart-state error">${view.errorKey ? t(view.errorKey) : escapeHtml(view.error)}</div>`;
     }
 
-    const chart = state.jatakView[chartKey];
+    const chart = view[chartKey];
     if (!chart) {
       return `<div class="kundali-image-chart chart-state">${t("chart.waiting")}</div>`;
     }
@@ -2266,7 +3411,7 @@
   }
 
   function astroNotesPreviewText(value, maxLength = 100) {
-    const text = String(value || "").replace(/\s+/g, " ").trim();
+    const text = stripNoteMarkup(value).replace(/\s+/g, " ").trim();
     return text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
   }
 
@@ -2421,6 +3566,12 @@
   }
 
   function astroNoteContentHtml(content) {
+    return String(content || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => `<p>${formatNoteInlineHtml(line.replace(/^-+\s*/, ""))}</p>`)
+      .join("");
     return String(content || "")
       .split(/\r?\n/)
       .map((line) => line.trim())
@@ -2583,6 +3734,28 @@
     document.getElementById("twoDChartLayoutSave")?.addEventListener("click", saveTwoDChartLayoutToFile);
   }
 
+  function attachJaiminiChartLayoutHandlers() {
+    if (!state.jaiminiChartLayoutModal.open) return;
+    document.getElementById("closeJaiminiChartLayoutModal")?.addEventListener("click", closeJaiminiChartLayoutModal);
+    document.getElementById("jaiminiChartLayoutMode")?.addEventListener("change", (event) => {
+      state.jaiminiChartLayoutModal.mode = event.target.value === "planet" ? "planet" : "sign";
+      state.jaiminiChartLayoutModal.message = "";
+      render();
+    });
+    document.getElementById("jaiminiChartLayoutHouse")?.addEventListener("change", (event) => {
+      state.jaiminiChartLayoutModal.house = Number(event.target.value) || 1;
+      state.jaiminiChartLayoutModal.message = "";
+      render();
+    });
+    document.getElementById("jaiminiChartLayoutSlot")?.addEventListener("change", (event) => {
+      state.jaiminiChartLayoutModal.slot = Number(event.target.value) || 1;
+      state.jaiminiChartLayoutModal.message = "";
+      render();
+    });
+    document.getElementById("jaiminiChartLayoutEditorChart")?.addEventListener("click", handleJaiminiChartLayoutClick);
+    document.getElementById("jaiminiChartLayoutSave")?.addEventListener("click", saveJaiminiChartLayoutToFile);
+  }
+
   async function saveChartLayoutToFile() {
     try {
       state.chartLayout = normalizeChartLayoutPlanetSlots(state.chartLayout);
@@ -2605,6 +3778,18 @@
       state.twoDChartLayoutModal.message = t("twoDChartLayout.saved");
     } catch (error) {
       state.twoDChartLayoutModal.message = error.message || t("chartLayout.saveError");
+    }
+    render();
+  }
+
+  async function saveJaiminiChartLayoutToFile() {
+    try {
+      state.jaiminiChartLayout = normalizeJaiminiChartLayout(state.jaiminiChartLayout);
+      await postJson("/jaimini-chart-layout", state.jaiminiChartLayout, "chartLayout.saveError");
+      localStorage.removeItem("ej_vedic_jaimini_chart_layout_draft");
+      state.jaiminiChartLayoutModal.message = t("jaiminiChartLayout.saved");
+    } catch (error) {
+      state.jaiminiChartLayoutModal.message = error.message || t("chartLayout.saveError");
     }
     render();
   }
@@ -2666,6 +3851,27 @@
     render();
   }
 
+  function handleJaiminiChartLayoutClick(event) {
+    const svg = event.currentTarget;
+    const rect = svg.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 100;
+    const y = ((event.clientY - rect.top) / rect.height) * 100;
+    const clickedHouse = jaiminiChartLayoutHouseAtPoint(x, y) || Number(event.target.closest?.("[data-jaimini-layout-house]")?.dataset?.jaiminiLayoutHouse);
+    const house = clickedHouse || Number(state.jaiminiChartLayoutModal.house) || 1;
+    state.jaiminiChartLayoutModal.house = house;
+    const layoutHouse = ensureJaiminiLayoutHouse(house);
+    if (state.jaiminiChartLayoutModal.mode === "planet") {
+      const slotIndex = Math.max(0, Math.min(JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT - 1, (Number(state.jaiminiChartLayoutModal.slot) || 1) - 1));
+      layoutHouse.planets[slotIndex] = { x: roundChartCoordinate(x), y: roundChartCoordinate(y) };
+      state.jaiminiChartLayoutModal.message = `H${house} slot ${slotIndex + 1}: ${roundChartCoordinate(x)}, ${roundChartCoordinate(y)}`;
+    } else {
+      layoutHouse.sign = { x: roundChartCoordinate(x), y: roundChartCoordinate(y) };
+      state.jaiminiChartLayoutModal.message = `H${house} sign: ${roundChartCoordinate(x)}, ${roundChartCoordinate(y)}`;
+    }
+    saveJaiminiChartLayoutDraft();
+    render();
+  }
+
   function saveChartLayoutDraft() {
     try {
       localStorage.setItem("ej_vedic_chart_layout_draft", JSON.stringify(state.chartLayout));
@@ -2679,6 +3885,14 @@
       localStorage.setItem("ej_vedic_2d_chart_layout_draft", JSON.stringify(state.twoDChartLayout));
     } catch {
       // The modal message still exposes the last selected coordinate if storage is unavailable.
+    }
+  }
+
+  function saveJaiminiChartLayoutDraft() {
+    try {
+      localStorage.setItem("ej_vedic_jaimini_chart_layout_draft", JSON.stringify(state.jaiminiChartLayout));
+    } catch {
+      // The selected coordinate remains visible in the modal message when storage is unavailable.
     }
   }
 
@@ -2697,12 +3911,45 @@
     }
   }
 
+  function ensureJaiminiLayoutHouse(house, layout = state.jaiminiChartLayout) {
+    const targetLayout = layout || defaultJaiminiChartLayout();
+    targetLayout.jaimini = targetLayout.jaimini || defaultJaiminiChartLayout().jaimini;
+    targetLayout.jaimini.houses = targetLayout.jaimini.houses || {};
+    const key = String(house);
+    const fallback = northDiamondSlots().find((slot) => slot.house === house) || { points: "", x: 50, y: 50 };
+    if (!targetLayout.jaimini.houses[key]) {
+      targetLayout.jaimini.houses[key] = {
+        points: fallback.points,
+        sign: { x: fallback.x, y: fallback.y },
+        planets: Array.from({ length: JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT }, (_, index) => ({
+          x: fallback.x,
+          y: fallback.y + index * 3.2,
+        })),
+      };
+    }
+    const layoutHouse = targetLayout.jaimini.houses[key];
+    layoutHouse.points = layoutHouse.points || fallback.points;
+    layoutHouse.sign = layoutHouse.sign || { x: fallback.x, y: fallback.y };
+    layoutHouse.planets = Array.isArray(layoutHouse.planets) ? layoutHouse.planets.slice(0, JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT) : [];
+    while (layoutHouse.planets.length < JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT) {
+      layoutHouse.planets.push({ x: fallback.x, y: fallback.y });
+    }
+    if (!state.jaiminiChartLayout && layout === state.jaiminiChartLayout) {
+      state.jaiminiChartLayout = targetLayout;
+    }
+    return layoutHouse;
+  }
+
   function roundChartCoordinate(value) {
     return Math.round(Number(value) * 100) / 100;
   }
 
   function chartLayoutHouseAtPoint(x, y) {
     return northDiamondSlots().find((slot) => pointInPolygon(x, y, slot.points))?.house || null;
+  }
+
+  function jaiminiChartLayoutHouseAtPoint(x, y) {
+    return jaiminiDiamondSlots().find((slot) => pointInPolygon(x, y, slot.points))?.house || null;
   }
 
   function pointInPolygon(x, y, points) {
@@ -3147,6 +4394,244 @@
     return getJson(`/kundali-notes?${params.toString()}`, t("astroNotes.loadNotesError"));
   }
 
+  async function loadHomeNotes() {
+    if (state.homeView !== "notes") return;
+    const token = Date.now();
+    state.homeNotes.loadToken = token;
+    state.homeNotes.loading = true;
+    state.homeNotes.error = "";
+    render();
+    try {
+      const response = await getKundaliNotesPage({
+        page: state.homeNotes.page,
+        recordsPerPage: state.homeNotes.rowsPerPage,
+        searchBy: "notes",
+        search: state.homeNotes.query,
+      });
+      if (state.homeNotes.loadToken !== token) return;
+      const normalized = normalizeKundaliNotesList(response);
+      state.homeNotes.records = normalized.records;
+      state.homeNotes.totalRecords = normalized.totalRecords;
+      state.homeNotes.page = normalized.page || state.homeNotes.page;
+      state.homeNotes.totalPages = Number(response?.total_pages) || Math.max(1, Math.ceil((normalized.totalRecords || 0) / state.homeNotes.rowsPerPage));
+      state.homeNotes.footer = normalized.footer;
+      const selectedRecord = state.homeNotes.records.find((note) => String(note.id) === String(state.homeNotes.selectedId));
+      if (selectedRecord && state.homeNotes.mode === "view") {
+        loadHomeNoteIntoDetail(selectedRecord, "view");
+      } else if (state.homeNotes.mode === "view" && state.homeNotes.records.length) {
+        loadHomeNoteIntoDetail(state.homeNotes.records[0], "view");
+      } else if (state.homeNotes.mode === "view") {
+        resetHomeNoteDetail("view");
+      }
+    } catch (error) {
+      if (state.homeNotes.loadToken !== token) return;
+      state.homeNotes.records = [];
+      state.homeNotes.error = error.message || t("homeNotes.loadError");
+    } finally {
+      if (state.homeNotes.loadToken === token) {
+        state.homeNotes.loading = false;
+        render();
+      }
+    }
+  }
+
+  function changeHomeNotesPage(direction) {
+    if (state.homeNotes.loading) return;
+    const totalPages = Math.max(1, Number(state.homeNotes.totalPages) || Math.ceil((state.homeNotes.totalRecords || 0) / state.homeNotes.rowsPerPage) || 1);
+    const nextPage = direction === "next"
+      ? Math.min(totalPages, state.homeNotes.page + 1)
+      : Math.max(1, state.homeNotes.page - 1);
+    if (nextPage === state.homeNotes.page) return;
+    state.homeNotes.page = nextPage;
+    loadHomeNotes();
+  }
+
+  function handleHomeNotesSearchInput(event) {
+    state.homeNotes.query = event.target.value;
+    state.homeNotes.page = 1;
+    clearTimeout(state.homeNotes.searchTimer);
+    state.homeNotes.searchTimer = setTimeout(() => {
+      if (state.homeView === "notes") loadHomeNotes();
+    }, 500);
+  }
+
+  function resetHomeNotesSearch() {
+    clearTimeout(state.homeNotes.searchTimer);
+    state.homeNotes.query = "";
+    state.homeNotes.page = 1;
+    loadHomeNotes();
+  }
+
+  function selectedHomeNote() {
+    const selectedId = String(state.homeNotes.selectedId || "");
+    return (state.homeNotes.records || []).find((note) => String(note.id) === selectedId) || null;
+  }
+
+  function selectHomeNote(noteId) {
+    const note = (state.homeNotes.records || []).find((item) => String(item.id) === String(noteId));
+    if (!note) return;
+    loadHomeNoteIntoDetail(note, "view");
+    state.homeNotes.message = "";
+    state.homeNotes.error = "";
+    render();
+  }
+
+  function loadHomeNoteIntoDetail(note, mode = "view") {
+    state.homeNotes.selectedId = note?.id || null;
+    state.homeNotes.mode = mode;
+    state.homeNotes.noteText = note?.note_text || "";
+    state.homeNotes.ascSign = Number(note?.asc_sign) || 1;
+    state.homeNotes.housePlanets = astroNotesHousePlanetsFromPlacements(note?.placements || []);
+    state.homeNotes.planetMenu = { open: false, house: null, x: 0, y: 0 };
+  }
+
+  function resetHomeNoteDetail(mode = "new") {
+    state.homeNotes.selectedId = null;
+    state.homeNotes.mode = mode;
+    state.homeNotes.noteText = "";
+    state.homeNotes.ascSign = 1;
+    state.homeNotes.housePlanets = {};
+    state.homeNotes.message = "";
+    state.homeNotes.error = "";
+    state.homeNotes.planetMenu = { open: false, house: null, x: 0, y: 0 };
+  }
+
+  function isHomeNotesEditable() {
+    return state.homeNotes.mode === "new" || state.homeNotes.mode === "edit";
+  }
+
+  function handleHomeNotesAction(action) {
+    if (action === "new") {
+      resetHomeNoteDetail("new");
+      render();
+      return;
+    }
+    if (action === "edit") {
+      if (!state.homeNotes.selectedId) return;
+      state.homeNotes.mode = "edit";
+      state.homeNotes.message = "";
+      state.homeNotes.error = "";
+      render();
+      return;
+    }
+    if (action === "cancel") {
+      const note = selectedHomeNote();
+      if (note) {
+        loadHomeNoteIntoDetail(note, "view");
+      } else {
+        resetHomeNoteDetail("view");
+      }
+      render();
+      return;
+    }
+    if (action === "save") {
+      saveHomeNote();
+      return;
+    }
+    if (action === "delete") {
+      deleteHomeNote();
+    }
+  }
+
+  function addHomeNotePlanetToHouse(planet) {
+    const house = state.homeNotes.planetMenu.house;
+    if (!planet || !house) return;
+    const currentPlanets = state.homeNotes.housePlanets?.[house] || [];
+    state.homeNotes.housePlanets = {
+      ...(state.homeNotes.housePlanets || {}),
+      [house]: currentPlanets.includes(planet) ? currentPlanets : [...currentPlanets, planet],
+    };
+    state.homeNotes.planetMenu = { open: false, house: null, x: 0, y: 0 };
+    render();
+  }
+
+  function removeHomeNotePlanetFromHouse(house, planet) {
+    if (!house || !planet) return;
+    const currentPlanets = state.homeNotes.housePlanets?.[house] || [];
+    state.homeNotes.housePlanets = {
+      ...(state.homeNotes.housePlanets || {}),
+      [house]: currentPlanets.filter((existingPlanet) => existingPlanet !== planet),
+    };
+    render();
+  }
+
+  function homeNotePlacements() {
+    const ascSign = Number(state.homeNotes.ascSign) || 1;
+    const placements = [];
+    Object.entries(state.homeNotes.housePlanets || {}).forEach(([houseKey, planets]) => {
+      const house = Number(houseKey);
+      const sign = ((ascSign + house - 2) % 12) + 1;
+      (planets || []).forEach((planet) => placements.push({ planet, house, sign }));
+    });
+    return placements;
+  }
+
+  async function saveHomeNote() {
+    const noteText = (document.getElementById("homeNotesDetailText")?.value || state.homeNotes.noteText || "").trim();
+    if (!noteText) {
+      state.homeNotes.error = t("astroNotes.addRequired");
+      render();
+      return;
+    }
+    const isUpdate = state.homeNotes.mode === "edit" && state.homeNotes.selectedId;
+    const payload = {
+      note_text: noteText,
+      asc_sign: Number(state.homeNotes.ascSign) || 1,
+      placements: homeNotePlacements(),
+    };
+    state.homeNotes.saving = true;
+    state.homeNotes.error = "";
+    state.homeNotes.message = "";
+    render();
+    try {
+      const saved = isUpdate
+        ? await putJson(`/kundali-notes/${encodeURIComponent(state.homeNotes.selectedId)}`, payload, "astroNotes.updateKundaliError")
+        : await postJson("/kundali-notes", payload, t("astroNotes.saveKundaliError"));
+      const note = normalizeKundaliNote(saved?.note || saved?.data || saved);
+      if (note.id) {
+        state.homeNotes.records = [note, ...state.homeNotes.records.filter((record) => String(record.id) !== String(note.id))].slice(0, state.homeNotes.rowsPerPage);
+        state.homeNotes.totalRecords = Math.max(state.homeNotes.totalRecords || 0, isUpdate ? state.homeNotes.totalRecords : (state.homeNotes.totalRecords || 0) + 1);
+        loadHomeNoteIntoDetail(note, "view");
+      } else {
+        resetHomeNoteDetail("view");
+        await loadHomeNotes();
+      }
+      state.homeNotes.message = t(isUpdate ? "astroNotes.kundaliUpdated" : "astroNotes.kundaliSaved");
+    } catch (error) {
+      state.homeNotes.error = error.message || t(isUpdate ? "astroNotes.updateKundaliError" : "astroNotes.saveKundaliError");
+    } finally {
+      state.homeNotes.saving = false;
+      render();
+    }
+  }
+
+  async function deleteHomeNote() {
+    const noteId = state.homeNotes.selectedId;
+    if (!noteId) return;
+    if (!window.confirm(t("astroNotes.deleteConfirm"))) return;
+    state.homeNotes.saving = true;
+    state.homeNotes.error = "";
+    state.homeNotes.message = "";
+    render();
+    try {
+      await deleteJson(`/kundali-notes/${encodeURIComponent(noteId)}`, "astroNotes.deleteError");
+      state.homeNotes.records = state.homeNotes.records.filter((note) => String(note.id) !== String(noteId));
+      state.homeNotes.totalRecords = Math.max(0, (state.homeNotes.totalRecords || 1) - 1);
+      const nextNote = state.homeNotes.records[0] || null;
+      if (nextNote) {
+        loadHomeNoteIntoDetail(nextNote, "view");
+      } else {
+        resetHomeNoteDetail("view");
+      }
+      state.homeNotes.message = t("astroNotes.deleted");
+    } catch (error) {
+      state.homeNotes.error = error.message || t("astroNotes.deleteError");
+    } finally {
+      state.homeNotes.saving = false;
+      render();
+    }
+  }
+
   function normalizeKundaliNotesList(response) {
     const records = Array.isArray(response)
       ? response
@@ -3508,6 +4993,91 @@
             <textarea id="chartLayoutExportText" readonly>${escapeHtml(state.twoDChartLayoutModal.message || "")}</textarea>
           </div>
         </section>
+      </div>
+    `;
+  }
+
+  function jaiminiChartLayoutModalHtml() {
+    return `
+      <div class="modal-backdrop">
+        <section class="kundali-modal chart-layout-modal jaimini-chart-layout-modal" role="dialog" aria-modal="true" aria-label="${t("jaiminiChartLayout.title")}">
+          <div class="kundali-modal-header">
+            <h2>${t("jaiminiChartLayout.title")}</h2>
+            <button class="modal-close-button" id="closeJaiminiChartLayoutModal" type="button" aria-label="${t("common.close")}">x</button>
+          </div>
+          <div class="jaimini-chart-layout-body">
+            <div class="chart-layout-toolbar">
+              <label><span>${t("chartLayout.mode")}</span><select id="jaiminiChartLayoutMode">
+                <option value="sign" ${state.jaiminiChartLayoutModal.mode === "sign" ? "selected" : ""}>${t("chartLayout.signPosition")}</option>
+                <option value="planet" ${state.jaiminiChartLayoutModal.mode === "planet" ? "selected" : ""}>${t("chartLayout.planetSlot")}</option>
+              </select></label>
+              <label><span>${t("chartLayout.house")}</span><select id="jaiminiChartLayoutHouse">
+                ${Array.from({ length: 12 }, (_, index) => index + 1).map((house) => `<option value="${house}" ${state.jaiminiChartLayoutModal.house === house ? "selected" : ""}>H${house}</option>`).join("")}
+              </select></label>
+              <label><span>${state.jaiminiChartLayoutModal.mode === "planet" ? t("chartLayout.slot") : t("chartLayout.slotPlanetOnly")}</span><select id="jaiminiChartLayoutSlot" ${state.jaiminiChartLayoutModal.mode !== "planet" ? "disabled" : ""}>
+                ${Array.from({ length: JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT }, (_, index) => index + 1).map((slot) => `<option value="${slot}" ${state.jaiminiChartLayoutModal.slot === slot ? "selected" : ""}>${slot}</option>`).join("")}
+              </select></label>
+              <button id="jaiminiChartLayoutSave" type="button">${t("chartLayout.save")}</button>
+            </div>
+            <div class="chart-layout-workspace jaimini-chart-layout-workspace">
+              <section>
+                <h3>${t("chartLayout.editChart")}</h3>
+                ${jaiminiChartLayoutEditorChartHtml()}
+              </section>
+              <section>
+                <h3>${t("chartLayout.previewChart")}</h3>
+                ${jaiminiChartLayoutPreviewChartHtml()}
+              </section>
+            </div>
+            <textarea id="jaiminiChartLayoutExportText" readonly>${escapeHtml(state.jaiminiChartLayoutModal.message || "")}</textarea>
+          </div>
+        </section>
+      </div>
+    `;
+  }
+
+  function jaiminiChartLayoutEditorChartHtml() {
+    const selectedHouse = Number(state.jaiminiChartLayoutModal.house) || 1;
+    return `
+      <div class="chart-layout-editor-frame jaimini-chart-layout-frame">
+        <img class="chart-layout-editor-image" src="./src/images/blank_kundali.jpg" alt="" />
+        <svg class="chart-layout-editor-chart" id="jaiminiChartLayoutEditorChart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${t("jaiminiChartLayout.title")}">
+          ${jaiminiDiamondSlots().map((slot) => {
+            const isSelected = slot.house === selectedHouse;
+            const signPosition = jaiminiSignPosition(slot.house, [slot.x, slot.y]);
+            const planetSlots = isSelected ? Array.from({ length: JAIMINI_CHART_LAYOUT_PLANET_SLOT_COUNT }, (_, index) => jaiminiPlanetSlot(slot.house, index)) : [];
+            return `
+              <g class="chart-layout-editor-house ${isSelected ? "selected" : ""}" data-jaimini-layout-house="${slot.house}">
+                <polygon points="${slot.points}"></polygon>
+                ${isSelected ? `
+                  <circle class="chart-layout-sign-marker" cx="${formatSvgNumber(signPosition[0])}" cy="${formatSvgNumber(signPosition[1])}" r="1.4"></circle>
+                  <text x="${formatSvgNumber(signPosition[0])}" y="${formatSvgNumber(signPosition[1] - 2.4)}">H${slot.house}</text>
+                  ${planetSlots.map((position, index) => `<circle class="chart-layout-planet-marker ${state.jaiminiChartLayoutModal.slot === index + 1 ? "selected" : ""}" cx="${formatSvgNumber(position.x)}" cy="${formatSvgNumber(position.y)}" r="0.9"></circle>`).join("")}
+                ` : ""}
+              </g>
+            `;
+          }).join("")}
+        </svg>
+      </div>
+    `;
+  }
+
+  function jaiminiChartLayoutPreviewChartHtml() {
+    const selectedHouse = Number(state.jaiminiChartLayoutModal.house) || 1;
+    const sampleBodies = ["Sun", "Moon", "Mars", "Mer", "Jup", "Ven", "Sat", "Rah", "Ket", "Gul", "Man", "Pad"];
+    return `
+      <div class="chart-layout-editor-frame jaimini-chart-layout-frame">
+        <img class="chart-layout-editor-image" src="./src/images/blank_kundali.jpg" alt="" />
+        <svg class="chart-layout-editor-chart" viewBox="0 0 100 100" preserveAspectRatio="none" role="img" aria-label="${t("chartLayout.previewChart")}">
+          ${jaiminiDiamondSlots().map((slot) => {
+            const signPosition = jaiminiSignPosition(slot.house, [slot.x, slot.y]);
+            return `<text class="jaimini-layout-sign-text" x="${formatSvgNumber(signPosition[0])}" y="${formatSvgNumber(signPosition[1])}">${slot.house}</text>`;
+          }).join("")}
+          ${sampleBodies.map((body, index) => {
+            const position = jaiminiPlanetSlot(selectedHouse, index);
+            return `<text class="jaimini-layout-planet-text" x="${formatSvgNumber(position.x)}" y="${formatSvgNumber(position.y)}">${body}</text>`;
+          }).join("")}
+        </svg>
       </div>
     `;
   }
@@ -4044,12 +5614,14 @@
               <th>${t("planetTable.degree")}</th>
               <th>${t("planetTable.longitude")}</th>
               <th>${t("planetTable.nakshatra")}</th>
+              <th>${t("planetTable.nakshatraLord")}</th>
               <th>${t("planetTable.pada")}</th>
+              <th>${t("planetTable.padaLord")}</th>
               <th>${t("planetTable.retro")}</th>
             </tr>
           </thead>
           <tbody>
-            ${positions.map(planetaryDetailRowHtml).join("")}
+            ${positions.map(savedPlanetaryDetailRowHtml).join("")}
           </tbody>
         </table>
       </div>
@@ -4057,16 +5629,19 @@
   }
 
   function savedPlanetaryDetailHtml() {
-    if (state.jatakView.loading) {
+    return savedPlanetaryDetailForHtml(state.jatakView);
+  }
+
+  function savedPlanetaryDetailForHtml(view) {
+    if (view.loading || view.d1Loading) {
       return `<div class="chart-state">${t("chart.loading")}</div>`;
     }
 
-    if (state.jatakView.error) {
-      return `<div class="chart-state error">${state.jatakView.errorKey ? t(state.jatakView.errorKey) : state.jatakView.error}</div>`;
+    if (view.error) {
+      return `<div class="chart-state error">${view.errorKey ? t(view.errorKey) : escapeHtml(view.error)}</div>`;
     }
 
-    const rawPositions = state.jatakView.positions?.positions || state.jatakView.positions || {};
-    const positions = sortPlanetPositions(Object.values(rawPositions).filter((position) => shouldShowPlanet(position.name || position.body || "")));
+    const positions = savedPlanetaryDetailPositions(view);
     if (!positions.length) {
       return `<div class="chart-state">${t("chart.waiting")}</div>`;
     }
@@ -4081,15 +5656,60 @@
               <th>${t("planetTable.degree")}</th>
               <th>${t("planetTable.longitude")}</th>
               <th>${t("planetTable.nakshatra")}</th>
+              <th>${t("planetTable.nakshatraLord")}</th>
               <th>${t("planetTable.pada")}</th>
+              <th>${t("planetTable.padaLord")}</th>
               <th>${t("planetTable.retro")}</th>
             </tr>
           </thead>
           <tbody>
-            ${positions.map(planetaryDetailRowHtml).join("")}
+            ${positions.map(savedPlanetaryDetailRowHtml).join("")}
           </tbody>
         </table>
       </div>
+    `;
+  }
+
+  function savedPlanetaryDetailPositions(view) {
+    const fallbackPositions = view.positions?.positions || view.positions || {};
+    const fallbackByPlanet = new Map(
+      Object.values(fallbackPositions).map((position) => [normalizedPlanetKey(position.name || position.body || ""), position]),
+    );
+    const chartPlacements = view.d1?.placements || {};
+    const sourcePositions = Object.keys(chartPlacements).length
+      ? Object.entries(chartPlacements).map(([name, placement]) => {
+          const fallback = fallbackByPlanet.get(normalizedPlanetKey(name)) || {};
+          return {
+            ...fallback,
+            ...placement,
+            name: placement.name || placement.body || fallback.name || fallback.body || name,
+          };
+        })
+      : Object.values(fallbackPositions);
+    return sortPlanetPositions(sourcePositions.filter((position) => shouldShowPlanet(position.name || position.body || "")));
+  }
+
+  function savedPlanetaryDetailRowHtml(position) {
+    const nakshatraLord = position.nakshatra_lord || position.nakshatra_swami || position.star_lord || nakshatraLordFromDetails(position);
+    const padaLord =
+      position.pada_lord ||
+      position.nakshatra_pada_lord ||
+      position.padaLord ||
+      position.pada_lord_name ||
+      position.navamsa_lord ||
+      padaLordFromDetails(position);
+    return `
+      <tr>
+        <td>${localizedPlanetName(position.name || position.body || "")}${position.retrograde ? `<sup>*</sup>` : ""}</td>
+        <td>${localizedSignName(position.sign_index)}</td>
+        <td>${formatDegreeDms(position.degree_in_sign)}</td>
+        <td>${formatDegreeDms(position.longitude)}</td>
+        <td>${localizedNakshatraName(position.nakshatra)}</td>
+        <td>${planetDetailName(nakshatraLord)}</td>
+        <td>${position.pada || "-"}</td>
+        <td>${planetDetailName(padaLord)}</td>
+        <td>${position.retrograde ? t("common.yes") : t("common.no")}</td>
+      </tr>
     `;
   }
 
@@ -4181,7 +5801,8 @@
 
   function transitGocharModalHtml() {
     const options = ["5 Years", "1 Year", "Month", "Day", "Hour", "10 Min", "Minute"];
-    const birthDate = formatDisplayDateOnly(state.jatakView.dateTimeLabel) || "-";
+    const sourceView = transitSourceView();
+    const birthDate = formatDisplayDateOnly(sourceView.dateTimeLabel) || formatDisplayDateOnly(sourceView.birthDetails?.date) || "-";
     return `
       <div class="modal-backdrop">
         <section class="kundali-modal transit-gochar-modal" role="dialog" aria-modal="true" aria-label="${t("kundaliSection.viewTransit")}">
@@ -4230,14 +5851,19 @@
   function transitGocharChartHtml() {
     if (state.transitModal.loading) return `<div class="chart-state">${t("chart.loading")}</div>`;
     if (state.transitModal.error) return `<div class="chart-state error">${state.transitModal.errorKey ? t(state.transitModal.errorKey) : state.transitModal.error}</div>`;
-    if (!state.jatakView.d1 || !state.transitModal.data) return `<div class="chart-state">${t("chart.waiting")}</div>`;
-    const natalHouses = buildSavedChartHouses(state.jatakView.d1);
+    const sourceView = transitSourceView();
+    if (!sourceView.d1 || !state.transitModal.data) return `<div class="chart-state">${t("chart.waiting")}</div>`;
+    const natalHouses = buildSavedChartHouses(sourceView.d1);
     return `
       <div class="transit-gochar-content">
         ${twoDTransitChartHtml(natalHouses, buildTransitOverNatalHouses(state.transitModal.data, nativeAscSignIndex(natalHouses)))}
         ${transitDegreeComparisonHtml()}
       </div>
     `;
+  }
+
+  function transitSourceView() {
+    return state.transitModal.source === "search-kundali" ? (state.searchKundali.selected || {}) : state.jatakView;
   }
 
   function nativeAscSignIndex(natalHouses) {
@@ -4434,6 +6060,45 @@
     };
   }
 
+  function jaiminiDiamondSlots() {
+    return northDiamondSlots().map((slot) => {
+      const layoutHouse = jaiminiLayoutHouse(slot.house);
+      return {
+        ...slot,
+        points: layoutHouse?.points || slot.points,
+      };
+    });
+  }
+
+  function jaiminiLayoutHouse(house) {
+    return state.jaiminiChartLayout?.jaimini?.houses?.[String(house)] || null;
+  }
+
+  function jaiminiSignPosition(house, fallback) {
+    const sign = jaiminiLayoutHouse(house)?.sign || {};
+    return [
+      Number(sign.x ?? fallback[0]),
+      Number(sign.y ?? fallback[1]),
+    ];
+  }
+
+  function jaiminiPlanetSlot(house, index) {
+    const layoutHouse = jaiminiLayoutHouse(house);
+    const slots = layoutHouse?.planets || [];
+    const slot = slots[index] || slots[slots.length - 1] || null;
+    if (slot) {
+      return {
+        x: Number(slot.x),
+        y: Number(slot.y),
+      };
+    }
+    const fallback = northDiamondSlots().find((item) => item.house === house) || { x: 50, y: 50 };
+    return {
+      x: fallback.x,
+      y: fallback.y + 4 + index * 3.2,
+    };
+  }
+
   function transformPoints(points, scale, offset) {
     return String(points)
       .split(" ")
@@ -4627,6 +6292,34 @@
     return sequence[lordIndex];
   }
 
+  function padaLordFromDetails(details) {
+    const longitude = Number(details?.longitude);
+    const fallbackLongitude = zodiacLongitude(details?.sign_index, details?.degree_in_sign ?? details?.degree);
+    const absoluteLongitude = Number.isFinite(longitude) ? longitude : fallbackLongitude;
+    if (!Number.isFinite(absoluteLongitude)) return "";
+    const normalizedLongitude = ((absoluteLongitude % 360) + 360) % 360;
+    const navamsaSignIndex = (Math.floor(normalizedLongitude / (10 / 3)) % 12) + 1;
+    return signLordFromIndex(navamsaSignIndex);
+  }
+
+  function signLordFromIndex(signIndex) {
+    const lordBySign = {
+      1: "mars",
+      2: "venus",
+      3: "mercury",
+      4: "moon",
+      5: "sun",
+      6: "mercury",
+      7: "venus",
+      8: "mars",
+      9: "jupiter",
+      10: "saturn",
+      11: "saturn",
+      12: "jupiter",
+    };
+    return lordBySign[Number(signIndex)] || "";
+  }
+
   function vimshottariPlanetSequence() {
     return ["ketu", "venus", "sun", "moon", "mars", "rahu", "jupiter", "saturn", "mercury"];
   }
@@ -4745,7 +6438,8 @@
 
   function birthPositionByPlanet() {
     const map = new Map();
-    const savedPositions = state.jatakView.positions?.positions || state.jatakView.positions || {};
+    const sourceView = transitSourceView();
+    const savedPositions = sourceView.positions?.positions || sourceView.positions || {};
     Object.values(savedPositions).forEach((position) => {
       const key = normalizedPlanetKey(position.name || position.body || "");
       if (!key) return;
@@ -4757,7 +6451,7 @@
       });
     });
 
-    Object.entries(state.jatakView.d1?.placements || {}).forEach(([name, placement]) => {
+    Object.entries(sourceView.d1?.placements || {}).forEach(([name, placement]) => {
       const key = normalizedPlanetKey(name);
       if (!key || map.has(key)) return;
       map.set(key, {
@@ -4827,15 +6521,16 @@
   }
 
   function nakshatraNaadiHtml() {
-    if (state.jatakView.nakshatraNaadiLoading) {
+    const sourceView = nakshatraNaadiSourceView();
+    if (sourceView.nakshatraNaadiLoading) {
       return `<div class="chart-state">${t("nakshatraNaadi.loading")}</div>`;
     }
 
-    if (state.jatakView.nakshatraNaadiError) {
-      return `<div class="chart-state error">${state.jatakView.nakshatraNaadiErrorKey ? t(state.jatakView.nakshatraNaadiErrorKey) : state.jatakView.nakshatraNaadiError}</div>`;
+    if (sourceView.nakshatraNaadiError) {
+      return `<div class="chart-state error">${sourceView.nakshatraNaadiErrorKey ? t(sourceView.nakshatraNaadiErrorKey) : sourceView.nakshatraNaadiError}</div>`;
     }
 
-    const planets = state.jatakView.nakshatraNaadi?.planets || {};
+    const planets = sourceView.nakshatraNaadi?.planets || {};
     const planetGroups = nakshatraNaadiGroups(planets);
     if (!planetGroups.length) {
       return `<div class="chart-state">${t("nakshatraNaadi.waiting")}</div>`;
@@ -4843,7 +6538,7 @@
 
     const chunkSize = Math.ceil(planetGroups.length / 3);
     const columns = [planetGroups.slice(0, chunkSize), planetGroups.slice(chunkSize, chunkSize * 2), planetGroups.slice(chunkSize * 2)];
-    const isKundaliNakshatra = state.headerActiveMenu === "open-kundali" && state.jatakView.kundaliSection === "nakshatra-naadi";
+    const isKundaliNakshatra = isKundaliNakshatraContext();
     const panelStyle = isKundaliNakshatra ? ' style="grid-template-rows:auto max-content minmax(190px, auto);align-content:start;"' : "";
     const gridStyle = isKundaliNakshatra ? ' style="height:auto;min-height:0;max-height:none;overflow:hidden;"' : "";
     return `
@@ -4868,7 +6563,7 @@
   function naadiRuleControlsHtml() {
     const roots = Object.keys(state.naadiRules.data || {});
     const children = Object.keys(state.naadiRules.data?.[state.naadiRules.rootChoice] || {});
-    const isKundaliNakshatra = state.headerActiveMenu === "open-kundali" && state.jatakView.kundaliSection === "nakshatra-naadi";
+    const isKundaliNakshatra = isKundaliNakshatraContext();
     const controlsStyle = isKundaliNakshatra ? ' style="margin-top:0;"' : "";
     return `
       <div class="naadi-rule-controls"${controlsStyle}>
@@ -4990,7 +6685,8 @@
   }
 
   function dashaTableHtml(planetGroups = []) {
-    const dasha = state.jatakView.dasha || defaultDashaState();
+    const sourceView = dashaSourceView();
+    const dasha = sourceView.dasha || defaultDashaState();
     if (dasha.loading) {
       return `<div class="dasha-panel"><div class="chart-state">${t("dasha.loading")}</div></div>`;
     }
@@ -5040,7 +6736,7 @@
 
   function dashaTimingControlsHtml(planetGroups = []) {
     const options = ["5 Years", "Year", "Month", "Day", "Hour", "10 Min", "Minute"];
-    const selectedStep = state.jatakView.dasha?.step || "Hour";
+    const selectedStep = dashaSourceView().dasha?.step || "Hour";
     return `
       <div class="dasha-timing-panel">
         ${naadiSignificatorMessageHtml(planetGroups)}
@@ -5070,9 +6766,10 @@
   }
 
   function activeDashaNamesHtml() {
-    const periods = state.jatakView.dasha?.data?.periods || [];
+    const dasha = dashaSourceView().dasha || {};
+    const periods = dasha.data?.periods || [];
     const active = periods.find(isCurrentDashaPeriod);
-    const path = state.jatakView.dasha?.activePath?.length ? state.jatakView.dasha.activePath : Array.isArray(active?.path) ? active.path : [];
+    const path = dasha.activePath?.length ? dasha.activePath : Array.isArray(active?.path) ? active.path : [];
     const names = {
       dasha: dashaActiveNameHtml(path[0]),
       bhukti: dashaActiveNameHtml(path[1]),
@@ -5264,13 +6961,10 @@
   }
 
   function chartPickerOptions() {
-    return [
-      { value: "D1", label: "Birth Chart - D1" },
-      { value: "D2", label: "Hora Chart - D2" },
-      { value: "D3", label: "Dreshkan Chart - D3" },
-      { value: "CHALIT", label: "Chalit Chart - Chalit" },
-      { value: "D9", label: "Navamansha Chart - D9" },
-    ];
+    return kundaliSectionChartOptions().map((option) => ({
+      value: option.value,
+      label: `${option.label} - ${option.value}`,
+    }));
   }
 
   function chartPickerLabel(value, options) {
@@ -5514,7 +7208,7 @@
     const degreeDy = body.retrograde ? "0" : "-1.4";
     return `
       <text class="diamond-house-body ${colorClass}" x="${x}" y="${y}">
-        <tspan>${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.35" dy="${degreeDy}">${degree}</tspan>` : ""}
+        <tspan class="planet-name-text">${planetName}</tspan>${retrogradeMark}${degree ? `<tspan class="planet-degree-sup" dx="0.35" dy="${degreeDy}">${degree}</tspan>` : ""}
       </text>
     `;
   }
@@ -5779,6 +7473,9 @@
     } finally {
       state.jatakView.loading = false;
       render();
+      if (state.jatakView.kundaliSection === "ashtak-varga") {
+        selectDefaultAshtakVarga();
+      }
     }
   }
 
@@ -5838,6 +7535,7 @@
       error: "",
       errorKey: "",
     };
+    state.searchKundali.activeTool = "";
     render();
     try {
       const params = new URLSearchParams({
@@ -5879,6 +7577,17 @@
     }
   }
 
+  async function loadJaiminiChartLayout() {
+    try {
+      const response = await fetch("./src/data/jaimini_chart_layout.json");
+      const layout = response.ok ? await response.json() : defaultJaiminiChartLayout();
+      const draft = localStorage.getItem("ej_vedic_jaimini_chart_layout_draft");
+      return normalizeJaiminiChartLayout(draft ? JSON.parse(draft) : layout);
+    } catch {
+      return normalizeJaiminiChartLayout(defaultJaiminiChartLayout());
+    }
+  }
+
   function normalizeChartLayoutPlanetSlots(layout) {
     Object.values(layout?.north?.houses || {}).forEach((house) => {
       house.planets = Array.isArray(house.planets) ? house.planets.slice(0, CHART_LAYOUT_PLANET_SLOT_COUNT) : [];
@@ -5901,6 +7610,15 @@
     };
   }
 
+  function defaultJaiminiChartLayout() {
+    return {
+      jaimini: {
+        image: "blank_kundali.jpg",
+        houses: {},
+      },
+    };
+  }
+
   function normalizeTwoDChartLayout(layout) {
     const normalized = layout?.north_2d ? layout : defaultTwoDChartLayout();
     normalized.north_2d.layers = normalized.north_2d.layers || {};
@@ -5911,6 +7629,16 @@
         ensureTwoDLayoutHouse(layer, house, normalized);
       }
     });
+    return normalized;
+  }
+
+  function normalizeJaiminiChartLayout(layout) {
+    const normalized = layout?.jaimini ? layout : defaultJaiminiChartLayout();
+    normalized.jaimini.image = normalized.jaimini.image || "blank_kundali.jpg";
+    normalized.jaimini.houses = normalized.jaimini.houses || {};
+    for (let house = 1; house <= 12; house += 1) {
+      ensureJaiminiLayoutHouse(house, normalized);
+    }
     return normalized;
   }
 
@@ -6183,6 +7911,317 @@
       state.openKundali.error = error.message || t("openKundali.loadError");
     } finally {
       state.openKundali.loading = false;
+      render();
+    }
+  }
+
+  async function loadSearchKundaliRecords(options = {}) {
+    if (state.searchKundali.loading) return;
+    state.searchKundali.loading = true;
+    state.searchKundali.error = "";
+    state.searchKundali.errorKey = "";
+    let autoOpenJatakId = "";
+    render();
+    try {
+      const page = Math.max(1, Number(state.searchKundali.page) || 1);
+      const recordsPerPage = 10;
+      const params = searchKundaliQueryParams(page, recordsPerPage);
+      const data = await getJson(`/jatak/page?${params.toString()}`, "searchKundali.loadError");
+      const totalRecords = Number(data?.total_records) || 0;
+      const totalPages = Math.max(1, Number(data?.total_pages) || Math.ceil(totalRecords / recordsPerPage));
+      state.searchKundali.records = Array.isArray(data?.items) ? data.items : [];
+      state.searchKundali.suggestions = state.searchKundali.records.slice(0, 10);
+      state.searchKundali.suggestionOpen = options.openSuggestions === true && searchKundaliActiveQuery().length >= 3;
+      state.searchKundali.rowsPerPage = recordsPerPage;
+      state.searchKundali.totalRecords = totalRecords;
+      state.searchKundali.totalPages = totalPages;
+      state.searchKundali.page = Math.min(page, totalPages);
+      const latestRecord = state.searchKundali.records[0] || null;
+      autoOpenJatakId = options.autoOpenLatest === true ? String(latestRecord?.jatak_id || latestRecord?.id || "") : "";
+    } catch (error) {
+      state.searchKundali.error = error.message || t("searchKundali.loadError");
+      state.searchKundali.errorKey = error.messageKey || "searchKundali.loadError";
+      state.searchKundali.suggestionOpen = false;
+    } finally {
+      state.searchKundali.loading = false;
+      render();
+    }
+    if (autoOpenJatakId) {
+      loadSearchKundaliPreview(autoOpenJatakId);
+    }
+  }
+
+  function changeSearchKundaliPage(direction) {
+    const totalPages = Math.max(1, Number(state.searchKundali.totalPages) || 1);
+    const nextPage = Math.min(totalPages, Math.max(1, (Number(state.searchKundali.page) || 1) + (Number(direction) || 0)));
+    if (nextPage === state.searchKundali.page) return;
+    state.searchKundali.page = nextPage;
+    loadSearchKundaliRecords();
+  }
+
+  async function loadSearchKundaliPreview(jatakId) {
+    if (!jatakId) return;
+    const record = (state.searchKundali.records || []).find((item) => String(item.jatak_id || item.id) === String(jatakId)) || {};
+    state.searchKundali.selected = {
+      jatakId,
+      jatakName: record.jatak_full_name || "",
+      dateTimeLabel: `${record.date || ""} ${record.time || ""}`.trim(),
+      birthDetails: record,
+      d1: null,
+      d9: null,
+      positions: null,
+      jaimini: null,
+      jaiminiLoading: false,
+      jaiminiError: "",
+      jaiminiErrorKey: "",
+      d1Chart: "D1",
+      d9Chart: "D9",
+      d1Loading: false,
+      d9Loading: false,
+      loading: true,
+      error: "",
+      errorKey: "",
+      dasha: defaultDashaState(),
+    };
+    render();
+
+    try {
+      const [details, d1, d9, positions] = await Promise.all([
+        getJson(`/jatak/${encodeURIComponent(jatakId)}`, "basicDetails.loadError"),
+        getJson(jatakChartUrl(jatakId, "D1"), "chart.loadError"),
+        getJson(jatakChartUrl(jatakId, "D9"), "chart.loadError"),
+        getJson(`/jatak/${encodeURIComponent(jatakId)}/positions?include_aprakashita=true`, "chart.loadError"),
+      ]);
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        birthDetails: details || record,
+        jatakName: details?.jatak_full_name || record.jatak_full_name || "",
+        dateTimeLabel: `${details?.date || record.date || ""} ${details?.time || record.time || ""}`.trim(),
+        d1,
+        d9,
+        positions,
+        d1Chart: "D1",
+        d9Chart: "D9",
+        loading: false,
+      };
+    } catch (error) {
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        loading: false,
+        error: error.message || t("chart.loadError"),
+        errorKey: error.messageKey || "chart.loadError",
+      };
+    } finally {
+      render();
+      if (state.searchKundali.activeTool === "jaimini-kundali") {
+        loadSearchKundaliJaiminiDetails();
+      }
+    }
+  }
+
+  async function updateSearchKundaliPreviewChart(chartKey, chartCode) {
+    const selected = state.searchKundali.selected || {};
+    if (!selected.jatakId || !chartKey || !chartCode) return;
+    const loadingKey = `${chartKey}Loading`;
+    const choiceKey = `${chartKey}Chart`;
+    state.searchKundali.selected = {
+      ...selected,
+      [choiceKey]: chartCode,
+      [loadingKey]: true,
+      error: "",
+      errorKey: "",
+    };
+    render();
+
+    try {
+      const chart = await getJson(jatakChartUrl(selected.jatakId, chartCode), "chart.loadError");
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        [chartKey]: chart,
+        [loadingKey]: false,
+      };
+    } catch (error) {
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        [loadingKey]: false,
+        error: error.message || t("chart.loadError"),
+        errorKey: error.messageKey || "chart.loadError",
+      };
+    } finally {
+      render();
+    }
+  }
+
+  function searchKundaliQueryParams(page, recordsPerPage) {
+    const params = new URLSearchParams({
+      page: String(page),
+      records_per_page: String(recordsPerPage),
+    });
+    const nameQuery = state.searchKundali.nameQuery.trim();
+    const noteQuery = state.searchKundali.noteQuery.trim();
+    if (nameQuery.length >= 3) params.set("name_query", nameQuery);
+    if (noteQuery.length >= 3) params.set("note_query", noteQuery);
+    return params;
+  }
+
+  function resetSearchKundaliView() {
+    window.clearTimeout(state.searchKundali.searchTimer);
+    state.searchKundali.records = [];
+    state.searchKundali.suggestions = [];
+    state.searchKundali.loading = false;
+    state.searchKundali.error = "";
+    state.searchKundali.errorKey = "";
+    state.searchKundali.page = 1;
+    state.searchKundali.totalRecords = 0;
+    state.searchKundali.totalPages = 1;
+    state.searchKundali.nameQuery = "";
+    state.searchKundali.noteQuery = "";
+    state.searchKundali.activeSearchType = "";
+    state.searchKundali.suggestionOpen = false;
+    state.searchKundali.activeTool = "";
+    state.searchKundali.jaiminiInfoTab = "planetary";
+    state.searchKundali.selected = {
+      jatakId: null,
+      jatakName: "",
+      dateTimeLabel: "",
+      birthDetails: null,
+      d1: null,
+      d9: null,
+      d1Chart: "D1",
+      d9Chart: "D9",
+      jaimini: null,
+      jaiminiLoading: false,
+      jaiminiError: "",
+      jaiminiErrorKey: "",
+      d1Loading: false,
+      d9Loading: false,
+      positions: null,
+      loading: false,
+      error: "",
+      errorKey: "",
+      dasha: defaultDashaState(),
+    };
+  }
+
+  function searchKundaliActiveQuery() {
+    return state.searchKundali.activeSearchType === "note"
+      ? state.searchKundali.noteQuery.trim()
+      : state.searchKundali.nameQuery.trim();
+  }
+
+  function handleSearchKundaliInput(event, type) {
+    const value = event.target.value || "";
+    if (type === "note") {
+      state.searchKundali.noteQuery = value;
+    } else {
+      state.searchKundali.nameQuery = value;
+    }
+    state.searchKundali.activeSearchType = type;
+    state.searchKundali.page = 1;
+    state.searchKundali.suggestionOpen = false;
+    state.searchKundali.suggestions = [];
+    window.clearTimeout(state.searchKundali.searchTimer);
+    const activeLength = value.trim().length;
+    const hasAnySearch = state.searchKundali.nameQuery.trim().length > 0 || state.searchKundali.noteQuery.trim().length > 0;
+    if (activeLength > 0 && activeLength < 3) return;
+    if (hasAnySearch && activeLength < 3) return;
+    state.searchKundali.searchTimer = window.setTimeout(() => {
+      loadSearchKundaliRecords({ openSuggestions: activeLength >= 3 });
+    }, 500);
+  }
+
+  function hideSearchKundaliSuggestions() {
+    if (!state.searchKundali.suggestionOpen) return;
+    state.searchKundali.suggestionOpen = false;
+    render();
+  }
+
+  function applySearchKundaliSuggestion(jatakId) {
+    const selected = (state.searchKundali.suggestions || []).find((record) => String(record.jatak_id || record.id) === String(jatakId));
+    if (selected) {
+      if (state.searchKundali.activeSearchType === "note") {
+        state.searchKundali.noteQuery = selected.note1 || state.searchKundali.noteQuery;
+      } else {
+        state.searchKundali.nameQuery = selected.jatak_full_name || state.searchKundali.nameQuery;
+      }
+    }
+    state.searchKundali.page = 1;
+    state.searchKundali.suggestionOpen = false;
+    loadSearchKundaliRecords();
+  }
+
+  function clearSearchKundaliField(type) {
+    if (type === "note") {
+      state.searchKundali.noteQuery = "";
+    } else {
+      state.searchKundali.nameQuery = "";
+    }
+    state.searchKundali.activeSearchType = "";
+    state.searchKundali.suggestionOpen = false;
+    state.searchKundali.suggestions = [];
+    state.searchKundali.page = 1;
+    window.clearTimeout(state.searchKundali.searchTimer);
+    loadSearchKundaliRecords();
+  }
+
+  function handleSearchKundaliTool(toolKey) {
+    if (!state.searchKundali.selected?.jatakId || !toolKey) return;
+    state.searchKundali.activeTool = toolKey === "kundali" ? "" : toolKey;
+    if (toolKey === "ashtakvarga") {
+      selectDefaultAshtakVarga();
+      return;
+    }
+    if (toolKey === "nakshatra-naadi") {
+      state.naadiView = "nakshatra";
+      state.chartHeaderChoices.d1.chart = "D1";
+      state.chartHeaderChoices.d9.chart = "CHALIT";
+      state.searchKundali.selected.d1Chart = "D1";
+      state.searchKundali.selected.d9Chart = "CHALIT";
+      state.searchKundali.selected.dasha = defaultDashaState();
+      render();
+      updateSearchKundaliPreviewChart("d9", "CHALIT");
+      loadNakshatraNaadi();
+      loadDashaLevel("");
+      return;
+    }
+    if (toolKey === "jaimini-kundali") {
+      state.searchKundali.jaiminiInfoTab = "planetary";
+      state.searchKundali.selected.d1Chart = "D1";
+      render();
+      loadSearchKundaliJaiminiDetails();
+      return;
+    }
+    render();
+  }
+
+  async function loadSearchKundaliJaiminiDetails() {
+    const selected = state.searchKundali.selected || {};
+    const jatakId = selected.jatakId;
+    if (!jatakId || selected.jaiminiLoading) return;
+    state.searchKundali.selected = {
+      ...selected,
+      jaiminiLoading: true,
+      jaiminiError: "",
+      jaiminiErrorKey: "",
+    };
+    render();
+    try {
+      const jaimini = await getJson(`/jatak/${encodeURIComponent(jatakId)}/analysis/jaimini`, "chart.loadError");
+      if (String(state.searchKundali.selected?.jatakId || "") !== String(jatakId)) return;
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        jaimini,
+        jaiminiLoading: false,
+      };
+    } catch (error) {
+      if (String(state.searchKundali.selected?.jatakId || "") !== String(jatakId)) return;
+      state.searchKundali.selected = {
+        ...state.searchKundali.selected,
+        jaiminiLoading: false,
+        jaiminiError: error.message || t("chart.loadError"),
+        jaiminiErrorKey: error.messageKey || "chart.loadError",
+      };
+    } finally {
       render();
     }
   }
@@ -6542,7 +8581,20 @@
   }
 
   function localizedPlanetFullName(name) {
-    const key = String(name || "").trim().toLowerCase();
+    const rawKey = String(name || "").trim().toLowerCase();
+    const aliases = {
+      surya: "sun",
+      chandra: "moon",
+      mangala: "mars",
+      mangal: "mars",
+      budha: "mercury",
+      guru: "jupiter",
+      sukra: "venus",
+      shukra: "venus",
+      sani: "saturn",
+      shani: "saturn",
+    };
+    const key = aliases[rawKey] || rawKey;
     const englishNames = {
       lagna: "Lagna",
       asc: "Lagna",
@@ -6813,5 +8865,24 @@
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  function formatNoteInlineHtml(value) {
+    return escapeHtml(value)
+      .replace(/\*\*([\s\S]*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^\*])\*([^\*\n]+)\*(?!\*)/g, '$1<span class="note-green-text">$2</span>');
+  }
+
+  function formatNoteBlockHtml(value) {
+    return String(value || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => `<p>${formatNoteInlineHtml(line)}</p>`)
+      .join("");
+  }
+
+  function stripNoteMarkup(value) {
+    return String(value || "").replace(/\*\*([\s\S]*?)\*\*/g, "$1");
   }
 })();
